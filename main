@@ -1,0 +1,82 @@
+PVector armPos = new PVector(100,150);
+float endrot;
+
+PVector cp_armL1 = new PVector(40,0);
+PVector ep_armL1 = new PVector(80,0);
+PVector cp_armL2 = new PVector(10,0);
+PVector ep_armL2 = new PVector(50,50); 
+
+void setup(){
+  size(500, 500, P3D); 
+  //frameRate(10);
+  noLoop();
+}
+
+void draw(){
+  
+  //background(100);
+
+  pushMatrix();
+  translate(armPos.x,armPos.y);
+  arm_make(ep_armL1,cp_armL1,ep_armL2,cp_armL2,0);
+  popMatrix();  
+
+}
+
+void arm_make(PVector end1, PVector cp1, PVector end2, PVector cp2, float angle){
+  
+  int arm1_node = 6;
+  int arm2_node = 10;
+  float[] thick1 = new float[]{20,20,20,20,20,20};
+  float[] thick2 = new float[]{20,20,20,20,20,20,20,19,19,17};
+
+  fill(255,255,255);
+  arm_set(arm1_node, end1, cp1, thick1);
+   
+  pushMatrix();
+  translate(end1.x,end1.y);
+  rotateZ(endrot);
+  rotateX(angle);
+  fill(100,200,200);
+  arm_set(arm2_node, end2, cp2, thick2);
+  popMatrix();
+  
+}
+
+void arm_set(int node, PVector end, PVector cp, float[] thick){
+  
+  int NODE_NUM = node;
+  int EDGE_NUM = 8;
+  PVector[][] pt = new PVector[NODE_NUM][EDGE_NUM];
+  float rot = 0;
+  
+  for(int i=0; i<NODE_NUM; i++){
+    
+    float t = i * 1.0/(NODE_NUM-1);
+    float x = (2 * cp.x * t * (1-t)) + (end.x * pow(t,2));
+    float y = (2 * cp.y * t * (1-t)) + (end.y * pow(t,2)); 
+    rot = -1 * atan2(-1*y,x);
+    
+    for(int j=0; j<EDGE_NUM; j++){
+      float z = thick[i] * cos(j * 2 * PI/EDGE_NUM);
+      PVector v = new PVector(0, thick[i] * sin(j * 2 * PI/EDGE_NUM)).rotate(rot);
+      pt[i][j] = new PVector(v.x + x, v.y + y, z);       
+    }
+  }
+  endrot = rot;
+  
+  //mesh
+  for(int i=0; i<EDGE_NUM; i++){
+    beginShape(TRIANGLE_STRIP);
+    for(int j=0; j<NODE_NUM; j++){
+      vertex(pt[j][i].x,pt[j][i].y,pt[j][i].z);
+      if(i==EDGE_NUM-1){
+        vertex(pt[j][0].x,pt[j][0].y,pt[j][0].z);
+      }else{
+        vertex(pt[j][i+1].x,pt[j][i+1].y,pt[j][i+1].z);
+      }
+    }
+    endShape();
+  }
+}
+
