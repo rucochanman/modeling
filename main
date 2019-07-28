@@ -1,52 +1,91 @@
 PVector armPos = new PVector(100,150);
 float endrot;
 
-PVector cp_armL1 = new PVector(40,0);
-PVector ep_armL1 = new PVector(80,0);
+PVector cp_armL1 = new PVector(25,0);
+PVector ep_armL1 = new PVector(50,0);
 PVector cp_armL2 = new PVector(10,0);
-PVector ep_armL2 = new PVector(50,50); 
+PVector ep_armL2 = new PVector(50,0); 
+
 
 void setup(){
   size(500, 500, P3D); 
-  //frameRate(10);
-  noLoop();
+  frameRate(10);
+  //noLoop();
 }
 
 void draw(){
   
-  //background(100);
+  background(100);
 
   pushMatrix();
   translate(armPos.x,armPos.y);
+  
+  float f = frameCount%20;
+  ep_armL2.y = f;
+  ep_armL2.x = 50 - f;
+  ep_armL1.y = f;
+  //float angle = f*0.02 / PI;
   arm_make(ep_armL1,cp_armL1,ep_armL2,cp_armL2,0);
   popMatrix();  
 
 }
 
 void arm_make(PVector end1, PVector cp1, PVector end2, PVector cp2, float angle){
-  
+
+  int arm_edge = 8;
   int arm1_node = 6;
   int arm2_node = 10;
+  int hand_node = 4;
+  int fing_edge = 6;
+  int fing_node = 3;
+  
   float[] thick1 = new float[]{20,20,20,20,20,20};
   float[] thick2 = new float[]{20,20,20,20,20,20,20,19,19,17};
+  float[] thickh = new float[]{17,16,14,9};
+  float[] thickf = new float[]{5,4,2};
+  PVector cp_hand = new PVector(8,0); 
+  PVector ep_hand = new PVector(16,0); 
+  PVector cp_fing1 = new PVector(4,0); 
+  PVector ep_fing1 = new PVector(8,0); 
+  PVector cp_fing2 = new PVector(4,-2.5); 
+  PVector ep_fing2 = new PVector(8,-5); 
+  PVector cp_fing3 = new PVector(4,2.5); 
+  PVector ep_fing3 = new PVector(8,5); 
+  PVector cp_sumb = new PVector(3,3); 
+  PVector ep_sumb = new PVector(6,6); 
 
+  //arm1
   fill(255,255,255);
-  arm_set(arm1_node, end1, cp1, thick1);
-   
+  arm_set(arm_edge, arm1_node, end1, cp1, thick1);
+  //arm2
   pushMatrix();
   translate(end1.x,end1.y);
   rotateZ(endrot);
   rotateX(angle);
   fill(100,200,200);
-  arm_set(arm2_node, end2, cp2, thick2);
+  arm_set(arm_edge, arm2_node, end2, cp2, thick2);
+  //hand
+  translate(end2.x,end2.y);
+  rotateZ(endrot);
+  arm_set(arm_edge, hand_node, ep_hand, cp_hand, thickh);
+  //finger
+  translate(ep_hand.x,cp_hand.y);
+  rotateZ(endrot);
+  arm_set(fing_edge, fing_node, ep_fing1, cp_fing1, thickf); //mid
+  translate(-3,-5);
+  arm_set(fing_edge, fing_node, ep_fing2, cp_fing2, thickf); //ind
+  translate(0,10);
+  arm_set(fing_edge, fing_node, ep_fing3, cp_fing3, thickf); //lit
+  translate(-4,7);
+  arm_set(fing_edge, fing_node, ep_sumb, cp_sumb, thickf); //sumb
   popMatrix();
-  
+
 }
 
-void arm_set(int node, PVector end, PVector cp, float[] thick){
+void arm_set(int edge, int node, PVector end, PVector cp, float[] thick){
   
   int NODE_NUM = node;
-  int EDGE_NUM = 8;
+  int EDGE_NUM = edge;
   PVector[][] pt = new PVector[NODE_NUM][EDGE_NUM];
   float rot = 0;
   
@@ -79,4 +118,5 @@ void arm_set(int node, PVector end, PVector cp, float[] thick){
     endShape();
   }
 }
+
 
