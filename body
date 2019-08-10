@@ -1,16 +1,16 @@
-int BODY_NODE = 6;
-int BODY_DIV = 8;
-float BODY_HEIGHT = -80;
-float[] BODY_WEIGHT = {50,50,50,50,50,50};
-float[] body_bend_lr = {-0.5,-0.3,0,0.3,0.5};
-float[] body_bend_fb = {0,0.2,0.5,0.2,0};
-float[] body_twist = {0,0,0,0,0};
-PVector[][] body_pt = new PVector[BODY_NODE][BODY_DIV];
+int BODY_NODE = 12;
+int BODY_EDGE = 12;
+float BODY_HEIGHT = 100;
+float[] BODY_WEIGHT = {30,30,30,30,30,30,30,30,30,30,30,30};
+float[] param_body_lr = {-0.6,-0.4,-0.2,0,0.2,0.4,0.8,0.4,0.2,0,-0.2,-0.4};
+float[] param_body_fb = {0,0,0,0.1,0.5,0.8,0.3,0.1,0,0,0,0};
+float[] param_body_tw = {-0.6,-0.8,-1,-0.8,-0.6,0,0,0,0,0,0,-0.3};
+PVector[][] body_pt = new PVector[BODY_NODE][BODY_EDGE];
 
 void setup(){
   size(500, 500, P3D); 
-  noLoop();
-  //frameRate(1);
+  //noLoop();
+  frameRate(6);
 }
 
 
@@ -19,11 +19,12 @@ void draw(){
   background(200);
   pushMatrix();
   translate(width/2,height/2);
-  rotateX(PI/2);
+  //rotateX(PI/2);
+  //rotateY(PI/2);
   
-  int step = frameCount%5;
-  //body_make(body_bend_lr[step],body_bend_fb[step],0);
-  body_make(0,2,0);
+  int step = frameCount%12;
+  body_make(param_body_lr[step],param_body_fb[step],param_body_tw[step]);
+  //body_make(0,0,1);
   
   popMatrix();
 }
@@ -32,65 +33,50 @@ void draw(){
 void body_make(float lr_value, float fb_value, float tw_value){
   
   //value mapping
-  float lr = map(lr_value, -1, 1, PI/4, 3*PI/4);
-  float fb = map(fb_value, -1, 2, 3*PI/4, -PI/8);
-  float tw = map(fb_value, -1, 1, PI/4, -PI/4); 
-  
-  //culc bone
+  float lr = map(lr_value, -1, 1, 3*PI/4, PI/4);
+  float fb = map(fb_value, -1, 2, 3*PI/4, -PI/16);
+  float tw = map(tw_value, -1, 1, PI/2, -PI/2); 
+  //calc bone
   float h = BODY_HEIGHT;
   float ep_x = h * cos(lr);
-  float ep_y = h * sin(lr) * sin(fb);  
+  float ep_y = -h * sin(lr) * sin(fb);  
   float ep_z = h * sin(lr) * cos(fb); 
-  PVector cp = new PVector(0,h/3,0);
+  PVector cp = new PVector(0,-h/3,0);
   
   //culc points
   for(int i=0;i<BODY_NODE;i++){
-    for(int j=0;j<BODY_DIV;j++){
-      
+      //bone line
       float t = i * 1.0/(BODY_NODE-1);
       float sampx = (2 * cp.x * t * (1-t)) + (ep_x * pow(t,2));
       float sampy = (2 * cp.y * t * (1-t)) + (ep_y * pow(t,2)); 
       float sampz = (2 * cp.z * t * (1-t)) + (ep_z * pow(t,2)); 
-      strokeWeight(5);
-      stroke(255,0,0);
-      point(sampx, sampy, sampz);
-      
+      //angle
       float rotZ = atan2(sampx,sampy) + PI/2;
-      float rotX = atan2(-sampz,sampy); 
+      float rotX = atan2(sampz,-sampy); 
+      if(i==0){rotX=0;}
       float rotY = 0;
-      if(i!=0){rotY = tw/(BODY_NODE-i);};
-
-      float r = BODY_WEIGHT[i];
-      float plot = j * TWO_PI/BODY_DIV + rotY;
-      float x = r * sin(plot)*sin(rotZ);
-      float z = r * cos(plot) * cos(rotX);
-      float y = (r*sin(plot)*cos(rotZ)) + (r*cos(plot)*sin(rotX));
-      body_pt[i][j] = new PVector(x + sampx,y + sampy,z + sampz);
-      
-      stroke(j*10,j*20,j*30);
-      if(i==1){point(x + sampx,y + sampy,z + sampz);};
+      if(i!=0){rotY = t*tw;}
+      float r = BODY_WEIGHT[i];    
+      //set points
+      for(int j=0;j<BODY_EDGE;j++){
+        float plot = j * TWO_PI/BODY_EDGE + rotY;
+        float x = r * sin(plot) * sin(rotZ);
+        float z = r * cos(plot) * cos(rotX);
+        float y = (r*sin(plot)*cos(rotZ)) + (r*cos(plot)*sin(rotX));
+        body_pt[i][j] = new PVector(x + sampx,y + sampy,z + sampz);
     }
   }
-
-  
-  /*
   //make mesh
-  for(int i=0;i<BODY_NODE;i++){
+  for(int i=0;i<BODY_EDGE;i++){
     beginShape(TRIANGLE_STRIP);
-    for(int j=0;j<BODY_DIV;j++){
-      if(i!=BODY_NODE-1){
-        vertex(body_pt[i][j].x, body_pt[i][j].y, body_pt[i][j].z);
-        vertex(body_pt[i+1][j].x, body_pt[i+1][j].y, body_pt[i+1][j].z);
-        if(j==BODY_DIV-1){
-          vertex(body_pt[i][0].x, body_pt[i][0].y, body_pt[i][0].z);
-          vertex(body_pt[i+1][0].x, body_pt[i+1][0].y, body_pt[i+1][0].z);
+    for(int j=0;j<BODY_NODE;j++){
+        vertex(body_pt[j][i].x, body_pt[j][i].y, body_pt[j][i].z);
+        if(i==BODY_EDGE-1){
+          vertex(body_pt[j][0].x, body_pt[j][0].y, body_pt[j][0].z);
+        }else{
+          vertex(body_pt[j][i+1].x, body_pt[j][i+1].y, body_pt[j][i+1].z);       
         }
-      }
     }
     endShape(CLOSE);
   }
-  
-  */
-
-
 }
