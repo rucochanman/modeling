@@ -1,7 +1,6 @@
 int BODY_NODE = 12;
 int BODY_EDGE = 12;
-float BODY_HEIGHT = 100;
-float[] BODY_WEIGHT = {30,30,30,30,30,30,30,30,30,30,30,30};
+float BODY_HEIGHT = 46;
 float[] param_body_lr = {-0.6,-0.4,-0.2,0,0.2,0.4,0.8,0.4,0.2,0,-0.2,-0.4};
 float[] param_body_fb = {0,0,0,0.1,0.5,0.8,0.3,0.1,0,0,0,0};
 float[] param_body_tw = {-0.6,-0.8,-1,-0.8,-0.6,0,0,0,0,0,0,-0.3};
@@ -20,18 +19,16 @@ void draw(){
   pushMatrix();
   translate(width/2,height/2);
   //rotateX(PI/2);
-  //rotateY(PI/2);
-  
+  //rotateY(PI/2);  
   int step = frameCount%12;
   body_make(param_body_lr[step],param_body_fb[step],param_body_tw[step]);
-  //body_make(0,0,1);
-  
+  //body_make(0,0,1); 
   popMatrix();
+  
 }
 
 
 void body_make(float lr_value, float fb_value, float tw_value){
-  
   //value mapping
   float lr = map(lr_value, -1, 1, 3*PI/4, PI/4);
   float fb = map(fb_value, -1, 2, 3*PI/4, -PI/16);
@@ -41,8 +38,7 @@ void body_make(float lr_value, float fb_value, float tw_value){
   float ep_x = h * cos(lr);
   float ep_y = -h * sin(lr) * sin(fb);  
   float ep_z = h * sin(lr) * cos(fb); 
-  PVector cp = new PVector(0,-h/3,0);
-  
+  PVector cp = new PVector(0,-h/2,0);
   //culc points
   for(int i=0;i<BODY_NODE;i++){
       //bone line
@@ -56,7 +52,7 @@ void body_make(float lr_value, float fb_value, float tw_value){
       if(i==0){rotX=0;}
       float rotY = 0;
       if(i!=0){rotY = t*tw;}
-      float r = BODY_WEIGHT[i];    
+      float r = BODY_HEIGHT*1.1 - i;    
       //set points
       for(int j=0;j<BODY_EDGE;j++){
         float plot = j * TWO_PI/BODY_EDGE + rotY;
