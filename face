@@ -1,77 +1,154 @@
-//import peasy.*;   
-//PeasyCam cam;  
-int FACE_DIV = 15;
-int FACE_NODE = 18; 
-PVector[][] face_pt = new PVector[FACE_DIV][FACE_NODE];
+int FACE_EDGE = 16;
+int FACE_NODE = 18;
+float FACE_SIZE = 90;
+PVector[][] face_pt = new PVector[FACE_EDGE][FACE_NODE];
 
-float[] front1 = {1, 0.97, 0.94, 0.88, 0.84, 0.79,
-                  0.74, 0.72, 0.7, 0.7, 0.72, 0.84,
-                  0.93, 0.98, 1, 0.96, 0.94, 0.92};
-              
-float[] front2 = {1, 0.97, 0.96, 0.95, 0.93, 0.89,
-                  0.85, 0.83, 0.8, 0.79, 0.81, 0.92,
-                  0.98, 1, 0.99, 0.96, 0.94, 0.92};              
-              
-float[] front3 = {1, 0.98, 0.98, 0.97, 0.96, 0.94,
-                  0.9, 0.89, 0.86, 0.83, 0.87, 0.94,
-                  0.99, 1, 0.98, 0.96, 0.92, 0.92};                    
-              
-float[] sides = {1, 0.98, 0.98, 0.98, 0.98, 0.96,
-                0.93, 0.91, 0.89, 0.87, 0.89, 0.95,
-                1, 1, 0.98, 0.96, 0.92, 0.92};
-              
-float[] back3 = {1, 1, 1, 1, 1, 1,
-                 1, 1, 1, 1, 1, 1,
-                 1, 1, 0.98, 0.96, 0.94, 0.92};            
-              
-float[] back2 = {1, 1.01, 1.03, 1.05, 1.07, 1.09,
-                 1.1, 1.09, 1.08, 1.07, 1.05, 1.02,
-                 1, 1, 1, 0.96, 0.94, 0.92};               
-              
-float[] back1 = {1, 1.02, 1.07, 1.12, 1.15, 1.16,
-                 1.17, 1.16, 1.15, 1.15, 1.13, 1.11,
-                 1.08,1.05,1,0.96,0.94,0.92};   
-                  
-float[] back0 = {1, 1.02, 1.07, 1.12, 1.15, 1.16,
-                 1.17, 1.16, 1.15, 1.15, 1.13, 1.11,
-                 1.08, 1.05, 1, 0.96, 0.94, 0.92};               
-              
-float[][] face_r = {front1, front2, front3, sides, 
-                    back3, back2, back1, back0, back1, 
-                    back2, back3, sides, front3, front2, front1};
+int EYE_EDGE = 12;
+int EYE_NODE = 5; 
+PVector[][] eyeL_pt = new PVector[EYE_NODE][EYE_EDGE];
+PVector[][] eyeR_pt = new PVector[EYE_NODE][EYE_EDGE];
+PVector eyeL_center;
+PVector eyeR_center;
 
 void setup(){
   size(500, 500, P3D); 
   noLoop();
+  frameRate(4);
   
-//  cam = new PeasyCam(this, 300); 
-//  cam.setMinimumDistance(50);  
-//  cam.setMaximumDistance(500);
+  //strokeWeight(1);
+  //noStroke();
+
+  face_set();
+  eye_set();
 
 }
 
 void draw(){
-  
-  //background(100);
-  PVector sPos = new PVector(width/2,height/2);
 
-  for(int i=0; i<FACE_DIV; i++){
-    face_pt[i] = face_set((i+1)*PI/8,face_r[i]);
-  }
-  
-  
+  //background(100);
+  PVector center = new PVector(width/2,height/2);
+
   pushMatrix();
-  translate(sPos.x, sPos.y,0);
-  //rotateX(-PI/2);
-  //rotateY(-PI/2);
-  
-  strokeWeight(3);
+  translate(center.x, center.y,0);
+  int step = frameCount;
+  //rotateX(PI/16);
+  rotateY(PI/2);
+  face_mesh();
+  fill(0,0,255);
+  eye_mesh();
 
   //mesh
-  beginShape(TRIANGLE_STRIP);
-  for(int i=0; i<FACE_DIV; i++){
+
+  popMatrix(); 
+  
+  
+}
+
+
+//////////face_make
+void face_set(){
+  
+/*  
+  
+  float[] f1 = {0.98, 0.95, 0.93, 0.88, 0.84, 0.79,
+                  0.74, 0.72, 0.7, 0.7, 0.72, 0.84,
+                  0.93, 0.98, 1, 0.96, 0.94, 0.92}; 
+                  
+  float[] f2 = {0.98, 0.95, 0.95, 0.95, 0.93, 0.89,
+                  0.85, 0.83, 0.8, 0.79, 0.81, 0.92,
+                  0.98, 1, 0.99, 0.96, 0.94, 0.92};   
+                  
+  float[] f3 = {0.98, 0.95, 0.95, 0.95, 0.94, 0.92,
+                  0.88, 0.85, 0.84, 0.83, 0.89, 0.96,
+                  1, 1, 0.98, 0.96, 0.92, 0.92};   
+                  
+  float[] f4 = {0.98, 0.96, 0.97, 0.97, 0.97, 0.96,
+                0.93, 0.91, 0.89, 0.87, 0.89, 0.95,
+                1, 1, 0.98, 0.96, 0.92, 0.92};    
+                
+  float[] f5 = {0.98, 1, 1.02, 1.03, 1.04, 1.03,
+                 1.02, 1.02, 1.02, 1.03, 1.04, 1.04,
+                 1.04, 1.04, 0.98, 0.96, 0.94, 0.92};  
+                 
+  float[] f6 = {0.98, 1.02, 1.06, 1.07, 1.09, 1.11,
+                 1.1, 1.09, 1.08, 1.07, 1.07, 1.06,
+                 1.05, 1.02, 1, 0.96, 0.94, 0.92};     
+                 
+  float[] f7 = {0.98, 1.03, 1.09, 1.14, 1.15, 1.16,
+                 1.17, 1.16, 1.15, 1.15, 1.14, 1.14,
+                 1.12,1.08,1.02,0.96,0.94,0.92};    
+                 
+  float[] f8 = {0.98, 1.03, 1.09, 1.13, 1.16, 1.16,
+                 1.17, 1.16, 1.15, 1.15, 1.13, 1.11,
+                 1.08, 1.05, 1, 0.96, 0.94, 0.92};    
+
+*/
+
+  float[] f0 = {1, 1.03, 1.035, 1.03, 1.02, 0.98,
+                  0.93, 0.9, 0.91, 0.98, 1.05, 1.1,
+                  1.1, 1.07, 1.01, 0.94, 0.9, 0.88}; 
+
+  float[] f1 = {1, 1.03, 1.035, 1.03, 1.02, 0.98,
+                  0.93, 0.9, 0.9, 0.98, 1.05, 1.1,
+                  1.1, 1.06, 1.01, 0.94, 0.9, 0.88};
+                  
+  float[] f2 = {1, 1.03, 1.035, 1.03, 1.02, 0.98,
+                  0.93, 0.9, 0.91, 0.98, 1.05, 1.08,
+                  1.09, 1.05, 1.0, 0.94, 0.89, 0.88};
+                  
+  float[] f3 = {1, 1.027, 1.035, 1.03, 1.01, 0.98,
+                  0.935, 0.9, 0.91, 0.976, 1.035, 1.055,
+                  1.05, 1.025, 0.98, 0.93, 0.89, 0.88};                                     
+                  
+  float[] f4 = {1, 1.027, 1.035, 1.028, 1.0, 0.97,
+                  0.93, 0.91, 0.91, 0.95, 0.975, 0.98,
+                  0.97, 0.97, 0.95, 0.93, 0.89, 0.88};  
+ 
+  float[] f5 = {1, 1.023, 1.03, 1.028, 1.015, 0.99,
+                 0.973, 0.967, 0.965, 0.97, 0.97, 0.97,
+                 0.96, 0.96, 0.93, 0.92, 0.88, 0.88};   
+                                 
+  float[] f6 = {1, 1.017, 1.023, 1.02, 1.01, 0.99,
+                 0.98, 0.98, 0.974, 0.963, 0.96, 0.95,
+                 0.955, 0.932, 0.92, 0.9, 0.88, 0.88};                                                  
+                  
+  float[] f7 = {1, 1.01, 1.011, 1.02, 1.01, 1,
+                 0.99, 0.98, 0.97, 0.96, 0.95, 0.94,
+                 0.93, 0.92, 0.9, 0.88, 0.88, 0.88};               
+                 
+  float[] f8 = {1, 1, 1.01, 1.02, 1.01, 1,
+                 0.99, 0.98, 0.97, 0.96, 0.95, 0.94,
+                 0.93, 0.92, 0.9, 0.88, 0.88, 0.88};    
+                 
+  float[][] r = {f0, f1, f2, f3, f4, f5, f6, f7, f8, f7, 
+                    f6, f5, f4, f3, f2, f1};
+
+  float step, x1, x2, x3;
+  
+  for(int i=0; i<FACE_EDGE; i++){
     for(int j=0; j<FACE_NODE; j++){
-      if(i==FACE_DIV-1){
+      //calc step
+      float t = (1.0/(FACE_NODE-1))*j;
+      x1 = 3 * FACE_NODE/2 * t * pow((1-t),2);
+      x2 = 3 * FACE_NODE/2 * pow(t,2) * (1-t);
+      x3 = (FACE_NODE-1) * pow(t,3);
+      step = x1 + x2 + x3;
+      //set points
+      float thita = PI - step * PI/(FACE_NODE-1);
+      float phi = i*PI/8;
+      float z = FACE_SIZE * r[i][j] * sin(thita) * cos(phi);
+      float x = FACE_SIZE * r[i][j] * sin(thita) * sin(phi);
+      float y = FACE_SIZE * r[i][j] * cos(thita);
+      face_pt[i][j] = new PVector(x,y,z);
+    }
+  }
+}
+
+void face_mesh(){
+  beginShape(TRIANGLE_STRIP);
+  for(int i=0; i<FACE_EDGE; i++){
+    for(int j=0; j<FACE_NODE; j++){
+      if(i==FACE_EDGE-1){
         vertex(face_pt[i][j].x,face_pt[i][j].y,face_pt[i][j].z);
         vertex(face_pt[0][j].x,face_pt[0][j].y,face_pt[0][j].z);
       }else{        
@@ -81,33 +158,65 @@ void draw(){
     }
   }
   endShape(CLOSE);
-
-  popMatrix(); 
 }
 
 
 
-PVector[] face_set(float angle, float r[]){
-  
-  float radius = 90;
-  int NODE_NUM = 18;
-  float step, x1, x2, x3;
-  PVector[] pt = new PVector[NODE_NUM];
-  
-  for(int i=0; i<NODE_NUM; i++){
-    float t = (1.0/(NODE_NUM-1))*i;
-    x1 = 3 * NODE_NUM/2 * t * pow((1-t),2);
-    x2 = 3 * NODE_NUM/2 * pow(t,2) * (1-t);
-    x3 = (NODE_NUM-1) * pow(t,3);
-    step = x1 + x2 + x3;
-    
-    float thita = PI - step * PI/(NODE_NUM-1);
-    float phi = angle;
-    float z = radius * r[i] * sin(thita) * cos(phi);
-    float x = radius * r[i] * sin(thita) * sin(phi);
-    float y = radius * r[i] * cos(thita);
-  
-    pt[i] = new PVector(x,y,z);
+/////////////eye_make
+void eye_set(){
+
+  float[] r = {FACE_SIZE/4, FACE_SIZE/5, FACE_SIZE/6, FACE_SIZE/8, 0};
+  float thick = 1;
+  float sPosL_x = (face_pt[14][7].x + face_pt[15][7].x)/2.5;
+  float sPosL_y = (face_pt[15][7].y + face_pt[15][8].y)/2;
+  float sPosL_z = face_pt[15][7].z; 
+  float sPosR_x = (face_pt[1][7].x + face_pt[2][7].x)/2.5;
+  float sPosR_y = (face_pt[1][7].y + face_pt[1][8].y)/2;
+  float sPosR_z = face_pt[1][7].z;
+  eyeL_center = new PVector(sPosL_x, sPosL_y, sPosL_z);
+  eyeR_center = new PVector(sPosR_x, sPosR_y, sPosR_z);  
+   
+  for(int i=0; i<EYE_NODE; i++){
+        for(int j=0; j<EYE_EDGE; j++){
+          float thita = j * TWO_PI/(EYE_EDGE-1);
+          float phiL = 7 * PI/16;
+          float phiR = -7 * PI/16;          
+          float zL = r[i] * sin(thita) * cos(phiL) + (thick*i);
+          float xL = r[i] * sin(thita) * sin(phiL);
+          float zR = r[i] * sin(thita) * cos(phiR) + (thick*i);
+          float xR = r[i] * sin(thita) * sin(phiR);          
+          float y = r[i] * cos(thita);
+          eyeL_pt[i][j] = new PVector(xL + sPosL_x, y + sPosL_y, zL + sPosL_z);
+          eyeR_pt[i][j] = new PVector(xR + sPosR_x, y + sPosR_y, zR + sPosR_z);          
+        }
   }
-  return pt;
+}
+
+void eye_mesh(){
+  //left
+  pushMatrix();
+  translate(eyeL_center.x, eyeL_center.y, eyeL_center.z);
+  rotateX(PI/16);
+  beginShape(TRIANGLE_STRIP);
+  for(int i=0; i<EYE_NODE; i++){
+    for(int j=0; j<EYE_EDGE; j++){
+      if(i!=EYE_NODE-1){
+        vertex(eyeL_pt[i][j].x,eyeL_pt[i][j].y,eyeL_pt[i][j].z);
+        vertex(eyeL_pt[i+1][j].x,eyeL_pt[i+1][j].y,eyeL_pt[i+1][j].z);
+      }
+    }
+  }
+  endShape(CLOSE);
+  popMatrix();
+
+  beginShape(TRIANGLE_STRIP);
+  for(int i=0; i<EYE_NODE; i++){
+    for(int j=0; j<EYE_EDGE; j++){
+      if(i!=EYE_NODE-1){
+        vertex(eyeR_pt[i][j].x,eyeR_pt[i][j].y,eyeR_pt[i][j].z);
+        vertex(eyeR_pt[i+1][j].x,eyeR_pt[i+1][j].y,eyeR_pt[i+1][j].z);
+      }
+    }
+  }
+  endShape(CLOSE);  
 }
