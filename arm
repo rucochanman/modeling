@@ -1,0 +1,53 @@
+void arm_make(float value1, float value2, float segrot1, float segrot2){
+  
+  int NODE_NUM1 = ARM1_NODE;
+  int NODE_NUM2 = ARM2_NODE;
+  PVector[][] pt1 = new PVector[NODE_NUM1][ARM_EDGE];
+  PVector[][] pt2 = new PVector[NODE_NUM2][ARM_EDGE];
+  float[] thick1 = new float[]{20,19,18,17,16,15};
+  float rot = 0;
+  
+  //value mapping
+  float ud = map(value1, -1, 2, PI/4, -PI/2);
+  
+  float h = ARM1_LENGTH;
+  PVector ep = new PVector(h*cos(ud), -h*sin(ud));  
+  PVector cp = new PVector(0,0);
+  
+  if(ep.y<0){
+    cp.y = cos(atan2(ep.x,ep.y))*h/2;
+  }else{
+    cp.x = cos(atan2(ep.x,ep.y))*h/2;
+  }
+  
+  //bone cal
+  for(int i=0; i<NODE_NUM1; i++){ 
+    float t = i * 1.0/(NODE_NUM1-1);
+    float x = (2 * cp.x * t * (1-t)) + (ep.x * pow(t,2));
+    float y = (2 * cp.y * t * (1-t)) + (ep.y * pow(t,2)); 
+    point(x,y);
+    rot = -1 * atan2(-1*y,x);
+    //set points
+    for(int j=0; j<ARM_EDGE; j++){
+      float z = thick1[i] * cos(j * 2 * PI/ARM_EDGE);
+      PVector v = new PVector(0, thick1[i] * sin(j * 2 * PI/ARM_EDGE)).rotate(rot);
+      pt1[i][j] = new PVector(v.x + x, v.y + y, z);   
+    }
+  }
+  armrot = rot;
+    
+  //mesh
+  for(int i=0; i<ARM_EDGE; i++){
+    beginShape(TRIANGLE_STRIP);
+    for(int j=0; j<NODE_NUM1; j++){
+      vertex(pt1[j][i].x,pt1[j][i].y,pt1[j][i].z);
+      if(i==ARM_EDGE-1){
+        vertex(pt1[j][0].x,pt1[j][0].y,pt1[j][0].z);
+      }else{
+        vertex(pt1[j][i+1].x,pt1[j][i+1].y,pt1[j][i+1].z);
+      }
+    }
+    endShape();
+  }
+  
+}
