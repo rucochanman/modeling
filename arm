@@ -1,37 +1,52 @@
 void arm_make(float value1, float value2, float segrot1, float segrot2){
   
-  int NODE_NUM1 = ARM1_NODE;
-  int NODE_NUM2 = ARM2_NODE;
-  PVector[][] pt1 = new PVector[NODE_NUM1][ARM_EDGE];
-  PVector[][] pt2 = new PVector[NODE_NUM2][ARM_EDGE];
-  float[] thick1 = new float[]{20,19,18,17,16,15};
-  float rot = 0;
-  
   //value mapping
-  float ud = map(value1, -1, 2, PI/4, -PI/2);
-  
-  float h = ARM1_LENGTH;
-  PVector ep = new PVector(h*cos(ud), -h*sin(ud));  
-  PVector cp = new PVector(0,0);
-  
-  if(ep.y<0){
-    cp.y = cos(atan2(ep.x,ep.y))*h/2;
+  float ud1 = map(value1, -1, 2, PI/4, -PI/2);
+  float ud2 = map(value2, 0, 2, 0, -PI/2);   
+  float h1 = ARM1_LENGTH;
+  float h2 = ARM2_LENGTH;
+  PVector ep1 = new PVector(h1*cos(ud1), -h1*sin(ud1));  
+  PVector cp1 = new PVector(0,0);
+  PVector ep2 = new PVector(h2*cos(ud2), -h2*sin(ud2));  
+  PVector cp2 = new PVector(0,0);  
+ 
+  if(ep1.y<0){
+    cp1.y = cos(atan2(ep1.x,ep1.y))*h1/2;
   }else{
-    cp.x = cos(atan2(ep.x,ep.y))*h/2;
+    cp1.x = cos(atan2(ep1.x,ep1.y))*h1/2;
   }
   
+  if(ep2.y<0){
+    cp2.y = cos(atan2(ep2.x,ep2.y))*h2/2;
+  }else{
+    cp2.x = cos(atan2(ep2.x,ep2.y))*h2/2;
+  }
+  
+  arm_set(ARM1_NODE, ep1, cp1);
+  
+  
+
+}
+
+void arm_set(int node, PVector ep, PVector cp){
+
+  int NODE_NUM = node;
+  float rot = 0;
+  float[] thick = new float[]{20,19,18,17,16,15};
+  PVector[][] pt = new PVector[NODE_NUM][ARM_EDGE];
+  
   //bone cal
-  for(int i=0; i<NODE_NUM1; i++){ 
-    float t = i * 1.0/(NODE_NUM1-1);
+  for(int i=0; i<NODE_NUM; i++){ 
+    float t = i * 1.0/(NODE_NUM-1);
     float x = (2 * cp.x * t * (1-t)) + (ep.x * pow(t,2));
     float y = (2 * cp.y * t * (1-t)) + (ep.y * pow(t,2)); 
     point(x,y);
     rot = -1 * atan2(-1*y,x);
     //set points
     for(int j=0; j<ARM_EDGE; j++){
-      float z = thick1[i] * cos(j * 2 * PI/ARM_EDGE);
-      PVector v = new PVector(0, thick1[i] * sin(j * 2 * PI/ARM_EDGE)).rotate(rot);
-      pt1[i][j] = new PVector(v.x + x, v.y + y, z);   
+      float z = thick[i] * cos(j * 2 * PI/ARM_EDGE);
+      PVector v = new PVector(0, thick[i] * sin(j * 2 * PI/ARM_EDGE)).rotate(rot);
+      pt[i][j] = new PVector(v.x + x, v.y + y, z);   
     }
   }
   armrot = rot;
@@ -39,15 +54,17 @@ void arm_make(float value1, float value2, float segrot1, float segrot2){
   //mesh
   for(int i=0; i<ARM_EDGE; i++){
     beginShape(TRIANGLE_STRIP);
-    for(int j=0; j<NODE_NUM1; j++){
-      vertex(pt1[j][i].x,pt1[j][i].y,pt1[j][i].z);
+    for(int j=0; j<NODE_NUM; j++){
+      vertex(pt[j][i].x,pt[j][i].y,pt[j][i].z);
       if(i==ARM_EDGE-1){
-        vertex(pt1[j][0].x,pt1[j][0].y,pt1[j][0].z);
+        vertex(pt[j][0].x,pt[j][0].y,pt[j][0].z);
       }else{
-        vertex(pt1[j][i+1].x,pt1[j][i+1].y,pt1[j][i+1].z);
+        vertex(pt[j][i+1].x,pt[j][i+1].y,pt[j][i+1].z);
       }
     }
     endShape();
   }
   
+
+
 }
