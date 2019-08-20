@@ -18,7 +18,7 @@ void arm_thick_set(){
 
 void arm_make(float value1, float value2, float segrot1, float segrot2){
   float ud1 = map(value1, -1, 2, PI/4, -PI/2);
-  float ud2 = map(value2, 0, 1, 0, -3*PI/4);
+
   float l1 = ARM1_LENGTH;
   float l2 = ARM2_LENGTH;  
   PVector ep1 = new PVector(l1*cos(ud1), -l1*sin(ud1));  
@@ -28,29 +28,13 @@ void arm_make(float value1, float value2, float segrot1, float segrot2){
   }else{
     cp1.x = cos(atan2(ep1.x,ep1.y))*l1/2;
   }  
-  
-  stroke(255,0,0);
-  strokeWeight(5);
-  point(cp1.x,cp1.y);
-  
+  rotateX(segrot1);
   arm_set(ARM1_NODE, ep1, cp1, thickh1, thickw1);
-  println("ud1: " + ud1);
-  println("armrot: " + armrot);
   translate(ep1.x, ep1.y, ep1.z);
+  rotateX(segrot2);
+  float ud2 = map(value2, 0, 1, 0, -2.5*PI/4);
   PVector ep2 = new PVector(l2*cos(armrot-ud2), l2*sin(armrot-ud2)); 
-  PVector cp2 = new PVector(0,0);
-  //PVector cp2 = new PVector(ep2.x/2,ep2.y/2); 
-  if(value2>0){
-    //cp2.x = -sin(atan2(ep2.x,ep2.y))*l2/2;
-    //cp2.x = 5;
-    cp2.y = -sin(atan2(ep2.x,ep2.y))*l2/2;
-  }else{
-    //cp2.y = cos(atan2(ep2.x,ep2.y))*ARM2_LENGTH/2; 
-  }
-  
-  stroke(0,0,255);
-  strokeWeight(5);
-  point(cp2.x,cp2.y);
+  PVector cp2 = new PVector(cos(armrot)*l2/2,abs(sin(armrot)*l2/2));
   arm_set(ARM2_NODE, ep2, cp2, thickh2, thickw2);
   
   
