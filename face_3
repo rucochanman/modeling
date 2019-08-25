@@ -1,0 +1,149 @@
+int FACE_NODE = 18;
+int FACE_EDGE = 16;
+float step, x1, x2, x3;
+float FACE_SIZE = 20;
+PVector[][] face_pt = new PVector[FACE_EDGE][FACE_NODE];
+
+float[] amp1 = {1.0, 0.85, 0.85, 1.0, 1.02,  0.9, 0.1, 0.1, 0.1};
+float[] amp2 = {1.1, 1.1, 1.1, 1.0, 1.0,  1.1, 0.92, 0.92, 0.92};
+float[] freq1 = {0.85, 0.85, 0.83, 0.85,0.85,  0.8, 0.5, 0.5, 0.5};
+float[] freq2 = {0.8, 0.8, 0.8, 0.81, 0.8,  0.8, 0.45, 0.45, 0.45};
+float[] phase1 = {PI/2, PI/2, PI/2, PI/2, PI/2,  PI/2.1, PI/2.3, PI/2.3, PI/2.3};
+float[] phase2 = {-PI, -PI, -PI, -PI, -PI,  -PI/1.05, -PI/1.2, -PI/1.2, -PI/1.2};
+float[] scale_x = {1, 1.9, 1.88, 1.82, 1.75,  1.7, 2.5, 2.5, 1}; 
+float[] scale_z = {1.7, 1.7, 1.8, 1.6, 1,  1.5, 2.3, 2.4, 2.4};
+float[] scale_y = {1,1,1,1,1, 1.02, 1.9, 1.95, 1.95};
+float c = 2;
+PVector topPos = new PVector(0,0,0);
+float btmPos = 0;
+
+
+void setup(){
+  size(500, 500, P3D);
+  noLoop();
+ 
+}
+
+void draw(){
+  
+  pushMatrix();
+  translate(width/2,height/2);
+  //rotateX(PI/2);
+  rotateY(PI/2);
+  face_make();
+  face_mesh();
+  popMatrix();
+  
+  
+}  
+  
+void face_make(){  
+  //btmPos
+  int l = FACE_NODE/2 -1;
+  float sin1 = amp1[l] * sin(freq1[l]*TWO_PI+phase1[l]) + amp1[l];
+  float sin2 = amp2[l] * sin(freq2[l]*TWO_PI+phase2[l]) + amp2[l];
+  float synth = sin1 + sin2 + c;
+  btmPos = FACE_SIZE * synth;  
+  //strokeWeight(15);
+  //stroke(255,0,0);
+  //point(0,btmPos,0);
+ 
+ 
+ 
+for(int i=0; i<FACE_EDGE; i++){
+  
+  int n = 0;
+  if(i>8){n = 2*(8-i);}
+  
+  for(int j=0; j<FACE_NODE; j++){
+     float t = j*1.0/(FACE_NODE-1);
+      x1 = 3 * FACE_NODE/2 * t * pow((1-t),2);
+      x2 = 3 * FACE_NODE/2 * pow(t,2) * (1-t);
+      x3 = (FACE_NODE-1) * pow(t,3);
+      step = x1 + x2 + x3;
+
+      sin1 = amp1[i+n] * sin(step*freq1[i+n]*TWO_PI/(FACE_NODE-1)+phase1[i+n]) + amp1[i+n];
+      sin2 = amp2[i+n] * sin(step*freq2[i+n]*TWO_PI/(FACE_NODE-1)+phase2[i+n]) + amp2[i+n];
+      synth = sin1 + sin2 + c;
+
+      float thita = PI - step * PI/(FACE_NODE-1);
+      float phi = i * PI/8;
+      float z = FACE_SIZE * synth * sin(thita) * cos(phi) * scale_z[i+n];
+      float x = FACE_SIZE * synth * sin(thita) * sin(phi) * scale_x[i+n];
+      float y = FACE_SIZE * synth * cos(thita) * scale_y[i+n];
+      if(i==0 && j==0){topPos = new PVector(x,y,z);}
+      if(i==0 && j==FACE_NODE-1){btmPos = y;}
+      face_pt[i][j] = new PVector(x,y,z);
+      if(j==0){face_pt[i][j] = topPos;}
+      if(j==FACE_NODE-1){face_pt[i][j].y = btmPos;} 
+      
+      strokeWeight(5);
+      stroke(0,0,0);
+      if(i==0){point(face_pt[i][j].x,face_pt[i][j].y,face_pt[i][j].z);}
+
+      stroke(0,255,0);
+      if(i==1||i==15){point(face_pt[i][j].x,face_pt[i][j].y,face_pt[i][j].z);}  
+      stroke(255,200,0);
+      
+         
+      if(i==2||i==14){point(face_pt[i][j].x,face_pt[i][j].y,face_pt[i][j].z);} 
+      stroke(55,200,0);
+      
+
+      if(i==3||i==13){point(face_pt[i][j].x,face_pt[i][j].y,face_pt[i][j].z);}   
+      stroke(0,0,0);  
+      
+         
+      
+      if(i==4||i==12){point(face_pt[i][j].x,face_pt[i][j].y,face_pt[i][j].z);}
+
+
+
+      //stroke(0,0,255);
+      //if(i==5||i==11){point(face_pt[i][j].x,face_pt[i][j].y,face_pt[i][j].z);}
+      
+      
+      //stroke(0,100,255);
+      //if(i==6||i==10){point(face_pt[i][j].x,face_pt[i][j].y,face_pt[i][j].z);}
+      
+               
+      if(i==7||i==9){point(face_pt[i][j].x,face_pt[i][j].y,face_pt[i][j].z);}
+             
+      stroke(255,0,0);
+      if(i==8){point(face_pt[i][j].x,face_pt[i][j].y,face_pt[i][j].z);} 
+      
+
+ }
+}
+
+
+}
+
+
+
+void face_mesh(){
+  beginShape(TRIANGLE_STRIP);
+  for(int i=0; i<FACE_EDGE; i++){
+    for(int j=0; j<FACE_NODE; j++){
+      if(i==FACE_EDGE-1){
+        vertex(face_pt[i][j].x,face_pt[i][j].y,face_pt[i][j].z);
+        vertex(face_pt[0][j].x,face_pt[0][j].y,face_pt[0][j].z);
+      }else{        
+        vertex(face_pt[i][j].x,face_pt[i][j].y,face_pt[i][j].z);
+        vertex(face_pt[i+1][j].x,face_pt[i+1][j].y,face_pt[i+1][j].z);
+      }
+    }
+  }
+  endShape(CLOSE);
+}
+
+
+
+
+
+
+
+
+
+ 
+      
