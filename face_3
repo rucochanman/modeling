@@ -1,21 +1,25 @@
 int FACE_NODE = 18;
 int FACE_EDGE = 16;
 float step, x1, x2, x3;
-float FACE_SIZE = 20;
+float FACE_SIZE = 100;
 PVector[][] face_pt = new PVector[FACE_EDGE][FACE_NODE];
 
-float[] amp1 = {1.0, 1.0, 1.0, 1.0, 1.05, 0.96, 0.08, 0.05, 0.05};
-float[] amp2 = {1.0, 1.0, 1.0, 0.9, 0.9, 1.0, 0.95, 0.92, 0.92};
-float[] freq1 = {0.85, 0.85, 0.84, 0.85, 0.85, 0.81, 0.5, 0.47, 0.47};
-float[] freq2 = {0.8, 0.8, 0.8, 0.79, 0.78, 0.85, 0.41, 0.4, 0.4};
-float[] phase1 = {PI/2, PI/2, PI/2, PI/2, PI/2, PI/2.1, PI/2.3, PI/2.3, PI/2.3};
-float[] phase2 = {-PI, -PI, -PI, -PI, -PI, -PI/1.05, -PI/1.2, -PI/1.2, -PI/1.2};
-float[] scale_x = {1, 1.9, 1.88, 1.82, 1.75, 1.68, 2.5, 2.5, 1}; 
-float[] scale_z = {1.7, 1.7, 1.8, 1.6, 1, 1.5, 2.3, 2.4, 2.6};
-float[] scale_y = {1, 0.98, 0.98, 0.99, 0.98, 1.03, 1.88, 1.92, 1.92};
-float c = 2;
-float topPos = -FACE_SIZE*4.85;
-float btmPos = FACE_SIZE*4.8;
+float[] amp1 = {0.23,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.23};
+float[] amp2 = {0.01,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.5};
+float[] freq1 = {2.99,3.8,3.8,3.8,3.8,3.8,3.8,3.8,1.5};
+float[] freq2 = {2.65,4.8,4.8,4.8,4.8,4.8,4.8,4.8,0.93};
+float phase1 = 1.4;
+float phase2 = 0.2;
+float[] scale_x = {1,1,1,1,1,1,1,1,1}; 
+float[] scale_z = {1.3,1,1,1,1,1,1,1,1.15}; 
+float[] scale_y = {1,1,1,1,1,1,1,1,1}; 
+float c = 0.57;
+
+
+
+float[] f0 = {1, 1.03, 1.035, 1.03, 1.02, 0.98,
+                  0.93, 0.9, 0.91, 0.98, 1.05, 1.1,
+                  1.1, 1.07, 1.01, 0.94, 0.9, 0.88}; 
 
 
 void setup(){
@@ -29,49 +33,61 @@ void draw(){
   pushMatrix();
   translate(width/2,height/2);
   //rotateX(PI/16);
-  rotateY(16*PI/8);
+  rotateY(PI/2);
   face_make();
-  face_mesh();
+  //face_mesh();
   popMatrix();
   
   
 }  
   
 void face_make(){  
-  //set btmPos
-  int l = FACE_NODE/2 -1;
-  float sin1 = amp1[l] * sin(freq1[l]*TWO_PI+phase1[l]) + amp1[l];
-  float sin2 = amp2[l] * sin(freq2[l]*TWO_PI+phase2[l]) + amp2[l];
-  float synth = sin1 + sin2 + c;
-  //btmPos = FACE_SIZE * synth;
-  //btmPos = 100;
-  println(FACE_SIZE * synth);
-  for(int i=0; i<FACE_EDGE; i++){
+
+  for(int i=0; i<FACE_EDGE; i++){    
     int n = 0;
     if(i>8){n = 2*(8-i);}  
+    
     //cal step
     for(int j=0; j<FACE_NODE; j++){
+      //if(i==0){println(j + "amp: " + amp);}          
+      
       float t = j*1.0/(FACE_NODE-1);
       x1 = 3 * FACE_NODE/2 * t * pow((1-t),2);
       x2 = 3 * FACE_NODE/2 * pow(t,2) * (1-t);
       x3 = (FACE_NODE-1) * pow(t,3);
       step = x1 + x2 + x3;
+      
+      float amp = (((FACE_NODE-1)-step)*amp1[i+n] +step*amp2[i+n])/(FACE_NODE-1);
+      float freq = (((FACE_NODE-1)-step)*freq1[i+n] + step*freq2[i+n])/(FACE_NODE-1);
+      float phase = (((FACE_NODE-1)-step)*phase1 + step*phase2)/(FACE_NODE-1);          
+      
       //sin waves
-      sin1 = amp1[i+n] * sin(step*freq1[i+n]*TWO_PI/(FACE_NODE-1)+phase1[i+n]) + amp1[i+n];
-      sin2 = amp2[i+n] * sin(step*freq2[i+n]*TWO_PI/(FACE_NODE-1)+phase2[i+n]) + amp2[i+n];
-      synth = sin1 + sin2 + c;
+      float sin = amp * sin(step*freq*PI/(FACE_NODE-1)+phase) + c;
       //set points
       float thita = PI - step * PI/(FACE_NODE-1);
       float phi = i * PI/8;
-      float z = FACE_SIZE * synth * sin(thita) * cos(phi) * scale_z[i+n];
-      float x = FACE_SIZE * synth * sin(thita) * sin(phi) * scale_x[i+n];
-      float y = FACE_SIZE * synth * cos(thita) * scale_y[i+n];
-      //if(i==0 && j==0){topPos = y;}
-      //if(i==0 && j==FACE_NODE-1){btmPos = y;}
+      float z = FACE_SIZE * sin * sin(thita) * cos(phi) * scale_z[i+n];
+      float x = FACE_SIZE * sin * sin(thita) * sin(phi) * scale_x[i+n];
+      float y = FACE_SIZE * sin * cos(thita) * scale_y[i+n];
+
       face_pt[i][j] = new PVector(x,y,z);
-      if(j==0){face_pt[i][j].y = topPos;}
-      //println(topPos);
-      if(j==FACE_NODE-1){face_pt[i][j].y = 105;}
+      //if(i==0){println(sin);};
+      
+      strokeWeight(5);
+      stroke(0,0,0);
+      if(i==0){point(x,y,z);};
+      if(i==8){point(x,y,z);};
+      
+      
+      z = FACE_SIZE * f0[j] * sin(thita) * cos(phi);
+      x = FACE_SIZE * f0[j] * sin(thita) * sin(phi);
+      y = FACE_SIZE * f0[j] * cos(thita);
+
+      stroke(255,0,0);
+
+      if(i==0){point(x,y,z);};
+      
+      //face_pt[i][j] = new PVector(x,y,z);
       
     }
   }
