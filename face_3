@@ -1,9 +1,9 @@
 int FACE_NODE = 18;
 int FACE_EDGE = 16;
-float step, x1, x2, x3;
-float FACE_SIZE = 100;
+float FACE_SIZE = 150;
 PVector[][] face_pt = new PVector[FACE_EDGE][FACE_NODE];
 
+/*
 float[] amp1 = {0.23,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.23};
 float[] amp2 = {0.01,0.15,0.15,0.15,0.15,0.15,0.15,0.15,0.5};
 float[] freq1 = {2.99,3.8,3.8,3.8,3.8,3.8,3.8,3.8,1.5};
@@ -14,12 +14,18 @@ float[] scale_x = {1,1,1,1,1,1,1,1,1};
 float[] scale_z = {1.3,1,1,1,1,1,1,1,1.15}; 
 float[] scale_y = {1,1,1,1,1,1,1,1,1}; 
 float c = 0.57;
+*/
 
+float amp1 = 0.15;
+float amp2 = 0.1;
+float[] freq1 = {3.5,3.4,3.4,3.4,3.2,3,2.8,2.5,2};
+float[] freq2 = {2.6,2.6,2.6,2.6,2.6,0.8,0.8,0.8,0.8};
+float phase1 = 1.5;
+float phase2 = -0.5;
+float[] scale_x = {1,1.5,1.5,1.5, 1.55, 1.4,1.4,1.4,1}; 
+float[] scale_z = {1.5,1.5,1.5,1.5, 1, 1.2,1.2,1.2,1.2}; 
+float c = 0.5;
 
-
-float[] f0 = {1, 1.03, 1.035, 1.03, 1.02, 0.98,
-                  0.93, 0.9, 0.91, 0.98, 1.05, 1.1,
-                  1.1, 1.07, 1.01, 0.94, 0.9, 0.88}; 
 
 
 void setup(){
@@ -32,10 +38,10 @@ void draw(){
   
   pushMatrix();
   translate(width/2,height/2);
-  //rotateX(PI/16);
-  rotateY(PI/2);
+  //rotateX(PI/2);
+  //rotateY(PI/2);
   face_make();
-  //face_mesh();
+  face_mesh();
   popMatrix();
   
   
@@ -49,16 +55,16 @@ void face_make(){
     
     //cal step
     for(int j=0; j<FACE_NODE; j++){
-      //if(i==0){println(j + "amp: " + amp);}          
       
       float t = j*1.0/(FACE_NODE-1);
-      x1 = 3 * FACE_NODE/2 * t * pow((1-t),2);
-      x2 = 3 * FACE_NODE/2 * pow(t,2) * (1-t);
-      x3 = (FACE_NODE-1) * pow(t,3);
-      step = x1 + x2 + x3;
+      float x1 = 3 * FACE_NODE/2.5 * t * pow((1-t),2);
+      float x2 = 3 * FACE_NODE/2.5 * pow(t,2) * (1-t);
+      float x3 = (FACE_NODE-1) * pow(t,3);
+      float step = x1 + x2 + x3;
       
-      float amp = (((FACE_NODE-1)-step)*amp1[i+n] +step*amp2[i+n])/(FACE_NODE-1);
-      float freq = (((FACE_NODE-1)-step)*freq1[i+n] + step*freq2[i+n])/(FACE_NODE-1);
+      //float amp = (((FACE_NODE-1)-step)*amp1 + step*amp2)/(FACE_NODE-1);
+      float amp = (1-t)*amp1 + t*amp2;
+      float freq = (1-t)*freq1[i+n] + t*freq2[i+n];
       float phase = (((FACE_NODE-1)-step)*phase1 + step*phase2)/(FACE_NODE-1);          
       
       //sin waves
@@ -68,26 +74,17 @@ void face_make(){
       float phi = i * PI/8;
       float z = FACE_SIZE * sin * sin(thita) * cos(phi) * scale_z[i+n];
       float x = FACE_SIZE * sin * sin(thita) * sin(phi) * scale_x[i+n];
-      float y = FACE_SIZE * sin * cos(thita) * scale_y[i+n];
+      float y = FACE_SIZE * sin * cos(thita);
 
       face_pt[i][j] = new PVector(x,y,z);
-      //if(i==0){println(sin);};
       
-      strokeWeight(5);
+      strokeWeight(1);
       stroke(0,0,0);
-      if(i==0){point(x,y,z);};
-      if(i==8){point(x,y,z);};
+      point(x,y,z);
+      //if(i==5 || i==11 ){point(x,y,z);};
+      //if(i==0||i==8){point(x,y,z);};
       
-      
-      z = FACE_SIZE * f0[j] * sin(thita) * cos(phi);
-      x = FACE_SIZE * f0[j] * sin(thita) * sin(phi);
-      y = FACE_SIZE * f0[j] * cos(thita);
-
-      stroke(255,0,0);
-
-      if(i==0){point(x,y,z);};
-      
-      //face_pt[i][j] = new PVector(x,y,z);
+ 
       
     }
   }
