@@ -5,7 +5,9 @@ float HEAD_SIZE = 150;
 PVector[][] head_pt = new PVector[HEAD_EDGE][HEAD_NODE];
 
 int EYE_NODE = 5;
-int EYE_EDGE = 8;
+int EYE_EDGE = 12;
+PVector eyeL_pos = new PVector(0,0,0);
+PVector eyeR_pos = new PVector(0,0,0);
 PVector[][] eye_pt = new PVector[EYE_NODE][EYE_EDGE];
 
 void setup(){
@@ -13,7 +15,8 @@ void setup(){
   noLoop();
   noStroke();
   frameRate(3);
-  //head_pt_set();
+  head_pt_set();
+  eye_pt_set();
 
  
 }
@@ -25,13 +28,18 @@ void draw(){
   pushMatrix();
   translate(width/2,height/2);
   //rotateX(PI/2);
-  rotateY(3*PI/8);
+  //rotateY(3*PI/8);
   //rotateY(frameCount * PI/8);
   stroke(0);
-  strokeWeight(5);
-    eye_pt_set();
-    make_mesh(EYE_NODE, EYE_EDGE, eye_pt);
-  //face_mesh();
+  //strokeWeight(5);
+  face_mesh();
+  fill(0,0,255);
+  translate(eyeL_pos.x,eyeL_pos.y,eyeL_pos.z);
+  make_mesh(EYE_NODE, EYE_EDGE, eye_pt);
+  translate(eyeR_pos.x,eyeR_pos.y,eyeR_pos.z);
+  make_mesh(EYE_NODE, EYE_EDGE, eye_pt);
+
+
   popMatrix();
   
   
@@ -39,6 +47,7 @@ void draw(){
   
 void head_pt_set(){
   //variables
+  float w = 1.4;
   float amp1 = 0.15;
   float ampf2 = 0.1;
   float ampb2 = 1.0;
@@ -50,8 +59,8 @@ void head_pt_set(){
   float fphase2 = -0.5;
   float bphase2 = -3.82;
   float c = 0.41;
-  float[] scale_x = {1, 1.45, 1.4, 1.4, 1.4, 1.4, 1.4, 1}; 
-  float[] scale_z = {1.42, 1.4, 1.4, 1.2, 1.2, 1.3, 1.4, 1.42};    
+  float[] scale_x = {1, 1.45, w, w, w, w, w, 1}; 
+  float[] scale_z = {1.42, w, w, 1.2, 1.2, 1.3, w, 1.42};    
   for(int i=0; i<HEAD_EDGE; i++){    
     int n = 0;
     if(i>HEAD_EDGE/2){n = 2*(HEAD_EDGE/2-i);}
@@ -82,26 +91,32 @@ void head_pt_set(){
       head_pt[i][j] = new PVector(x,y,z);
     }
   }
+  eyeL_pos.x = HEAD_SIZE * 0.2;
+  eyeL_pos.y = HEAD_SIZE * -0.1;
+  eyeL_pos.z = HEAD_SIZE * 0.365;
+  eyeR_pos.x = HEAD_SIZE * -0.2;
+  eyeR_pos.y = HEAD_SIZE * -0.1;
+  eyeR_pos.z = HEAD_SIZE * 0.365;  
+  
+  
+  
+  println(head_pt[1][7].z);
 }
 
 
 void eye_pt_set(){
-  float rad = 50;
+  float rad = HEAD_SIZE/7;
   float thick = rad/3;
   float r, h, x, y;
   float z = 0;
-  
   for(int i=0;i<EYE_NODE;i++){
     r = (EYE_NODE-i)*rad/EYE_NODE;
     h = pow((EYE_NODE-i)*1.0/EYE_NODE,2)*thick;
     z += h;
-    println(z);
     for(int j=0;j<EYE_EDGE;j++){
       x = r * cos(j*TWO_PI/(EYE_EDGE-1));
       y = r * sin(j*TWO_PI/(EYE_EDGE-1));
-    
       eye_pt[i][j] = new PVector(x,y,z);
-      point(x,y,z);
     }
   }
 }
