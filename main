@@ -1,0 +1,88 @@
+PVector center;
+float SCALE = 100;
+
+PVector armL_pos;
+PVector armR_pos;
+float ARM1_LENGTH = SCALE/2;
+float ARM2_LENGTH = SCALE/1.5;
+float HAND_LENGTH = SCALE/5;
+int ARM_EDGE = 8;
+int ARM1_NODE = 6;
+int ARM2_NODE = 10;
+float armrot;
+
+float[] thickh1 = new float[ARM1_NODE];
+float[] thickw1 = new float[ARM1_NODE];
+float[] thickh2 = new float[ARM2_NODE];
+float[] thickw2 = new float[ARM2_NODE];
+
+int HAND_NODE = 4;
+int FING_NODE = 3;
+int FING_EDGE = 6;
+
+PVector[][] hand_pt = new PVector[HAND_NODE][ARM_EDGE];
+PVector[][] fng1_pt = new PVector[FING_NODE][FING_EDGE];
+PVector[][] fng2_pt = new PVector[FING_NODE][FING_EDGE];
+PVector[][] fng3_pt = new PVector[FING_NODE][FING_EDGE];
+PVector[][] fng4_pt = new PVector[FING_NODE][FING_EDGE];
+
+
+int BODY_NODE = 12;
+int BODY_EDGE = 16;
+float BODY_HEIGHT = SCALE;
+PVector[][] body_pt = new PVector[BODY_NODE][BODY_EDGE];
+
+//params
+float[] param_body_lr = {-0.6,-0.4,-0.2,0,0.2,0.4,0.8,0.4,0.2,0,-0.2,-0.4};
+float[] param_body_fb = {0,0,0,0.1,0.5,0.8,0.3,0.1,0,0,0,0};
+float[] param_body_tw = {-0.6,-0.8,-1,-0.8,-0.6,0,0,0,0,0,0,-0.3};
+float[] param_arm1_bend = {-1,-0.5,-0.2,0,0.2,0.4,1,1.5,2,1,0,-0.5};
+float[] param_arm2_bend = {0,0.1,0.2,0.5,0.8,1,0.8,0.5,0.4,0.3,0.2,0.1};
+//float[] param_arm1_rot = {0,};
+
+void setup(){
+  size(500,500,P3D);
+  strokeWeight(1);
+  //noLoop();
+  frameRate(2);
+  center = new PVector(width/2, height/2, 0);
+  arm_thick_set();
+  hand_pt_set();
+}
+
+void draw(){
+ background(200);
+ int step = frameCount%12;
+ 
+ pushMatrix();
+ translate(center.x, center.y, 0); //move center
+ rotateX(-PI/8);
+ //body_make(param_body_lr[step],param_body_fb[step],param_body_tw[step]);
+ //body_make(0,0,0);
+ arm_make(param_arm1_bend[step],param_arm2_bend[step],0,0);
+ popMatrix();
+
+}
+
+
+
+
+void make_mesh(int NODE_NUM, int EDGE_NUM, PVector[][] pt){
+  for(int i=0; i<EDGE_NUM; i++){
+    beginShape(TRIANGLE_STRIP);
+    for(int j=0; j<NODE_NUM; j++){
+      vertex(pt[j][i].x,pt[j][i].y,pt[j][i].z);
+      if(i==EDGE_NUM-1){
+        vertex(pt[j][0].x,pt[j][0].y,pt[j][0].z);
+      }else{
+        vertex(pt[j][i+1].x,pt[j][i+1].y,pt[j][i+1].z);
+      }
+    }
+    endShape();
+  }
+  beginShape();
+  for(int i=0; i<EDGE_NUM; i++){
+    vertex(pt[NODE_NUM-1][i].x,pt[NODE_NUM-1][i].y,pt[NODE_NUM-1][i].z);
+  }
+  endShape();
+}
