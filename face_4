@@ -1,6 +1,6 @@
 //to main
 int HEAD_NODE = 18;
-int HEAD_EDGE = 16;
+int HEAD_EDGE = 18;
 float HEAD_SIZE = 150;
 PVector[][] head_pt = new PVector[HEAD_EDGE][HEAD_NODE];
 
@@ -21,7 +21,7 @@ void setup(){
   noStroke();
   frameRate(3);
   head_pt_set();
-  face_pt_set();
+//  face_pt_set();
 
  
 }
@@ -35,9 +35,11 @@ void draw(){
   pushMatrix();
   translate(width/2,height/2);
   scale(1.3);
-  //rotateX(-4*PI/8);
-  //rotateY(2*PI/8);
+  //rotateX(0*PI/8);
+  rotateY(-4*PI/8);
   make_face();
+  //PVector temp = head_pt_cal( 0.05882353 , -0.1);
+  //println(temp);
   popMatrix();
   
 }  
@@ -45,88 +47,74 @@ void draw(){
   
   
 void head_pt_set(){
-  
+  //face_pt
+  for(int i=0; i<HEAD_EDGE; i++){    
+    float n = 0;
+    if(i>HEAD_EDGE/2){n = 2*(HEAD_EDGE/2-i);}
+    float ediv = (i+n)/(HEAD_EDGE/2);
+    if(i>HEAD_EDGE/2){ediv = -1*ediv;}
+    for(int j=0; j<HEAD_NODE; j++){  
+      float ndiv = j*1.0/(HEAD_NODE-1);
+      head_pt[i][j] = head_pt_cal(ndiv, ediv);
+    }
+  }
+}
+
+
+
+PVector head_pt_cal(float ndiv, float ediv){
+  float pidiv = abs(ediv);
   //variables
-  float w = 1.58;
-  float amp1 = 0.15;
-  float amp2 = 0.1;
+  float amp1 = 0.16;
+  float amp2 = 0.11;
   float ffreq1 = 3.2;
   float ffreq2 = 2.6;
-  float bfreq1 = 0.4;
-  float bfreq2 = 1.08;
-  float phase1 = 1.7;
+  float bfreq1 = 0.0;
+  float bfreq2 = 1.077;
+  float phase1 = 1.65;
   float fphase2 = -0.5;
   float bphase2 = -2.0;
   float c = 0.44;
-  
-  //face_pt
-  for(int i=0; i<HEAD_EDGE; i++){    
-    int n = 0;
-    if(i>HEAD_EDGE/2){n = 2*(HEAD_EDGE/2-i);}
-    float p = pow((i+n)*1.0/(HEAD_EDGE/2),2);
-    float scale = (0.5-pow((n+i)*0.5/(HEAD_EDGE/2+1),2.5)) * sin(0.8*(n+i)*PI/(HEAD_EDGE/2+1) + PI/3) + 1.1;
-    for(int j=0; j<HEAD_NODE; j++){  
-      float t = j*1.0/(HEAD_NODE-1);
-      float x1 = 3 * HEAD_NODE/2.5 * t * pow((1-t),2);
-      float x2 = 3 * HEAD_NODE/2.5 * pow(t,2) * (1-t);
-      float x3 = (HEAD_NODE-1) * pow(t,3);
-      float step = x1 + x2 + x3; 
-      //params
-      float amp = (1-t)*amp1 + t*amp2;
-      float ffreq = (1-t)*ffreq1 + t*ffreq2;
-      float bfreq = (1-t)*bfreq1 + t*bfreq2;
-      float fphase = (((HEAD_NODE-1)-step)*phase1 + step*fphase2)/(HEAD_NODE-1);          
-      float bphase = (((HEAD_NODE-1)-step)*phase1 + step*bphase2)/(HEAD_NODE-1);                
-      //synthesis
-      float front = amp * sin(step*ffreq*PI/(HEAD_NODE-1)+fphase) + c;
-      float back = amp * sin(step*bfreq*PI/(HEAD_NODE-1)+bphase) + c;
-      float synth = (1-p)*front + p*back;      
-      //set points
-      float thita = PI - step * PI/(HEAD_NODE-1);
-      float phi = i * PI/(HEAD_EDGE/2);
-      float z = HEAD_SIZE * synth * sin(thita) * cos(phi) * scale;
-      float x = HEAD_SIZE * synth * sin(thita) * sin(phi) * scale;
-      float y = HEAD_SIZE * synth * cos(thita);
-      head_pt[i][j] = new PVector(x,y,z);
-    }
-  }
-  
-  //eye_pt_test
-  float node_angle = 1/4;
-  float edge_angle = 1/8;
-  float x1 = 3 * 0.4 * node_angle * pow((1-node_angle),2);
-  float x2 = 3 * 0.4 * pow(node_angle,2) * (1-node_angle);
-  float x3 = pow(node_angle,3);
+  //cal step
+  float cp = 0.4;
+  float x1 = 3 * cp * ndiv * pow((1-ndiv),2);
+  float x2 = 3 * cp * pow(ndiv,2) * (1-ndiv);
+  float x3 = pow(ndiv,3);
   float step = x1 + x2 + x3;
-  float amp = (1-node_angle)*amp1 + node_angle*amp2;
-  float ffreq = (1-node_angle)*ffreq1 + node_angle*ffreq2;
-  float bfreq = (1-node_angle)*bfreq1 + node_angle*bfreq2;
-  float fphase = (1-step)*phase1 + step*fphase2;          
+  //params
+  float amp = (1-ndiv)*amp1 + ndiv*amp2;
+  float ffreq = (1-ndiv)*ffreq1 + ndiv*ffreq2;
+  float bfreq = (1-ndiv)*bfreq1 + ndiv*bfreq2;
+  float fphase = (1-step)*phase1 + step*fphase2; 
   float bphase = (1-step)*phase1 + step*bphase2;
   //synthesis
   float front = amp * sin(step*ffreq*PI+fphase) + c;
   float back = amp * sin(step*bfreq*PI+bphase) + c;
-  float p = pow(node_angle,3);
+  float p = pow(pidiv,1.5);
   float synth = (1-p)*front + p*back;
-  float scale = (0.5-pow(node_angle*0.5,2.5)) * sin(0.8*node_angle*PI + PI/3) + 1.1;  
+  float scale = (0.5-pow(pidiv*0.5,5)) * sin(0.6*pidiv*PI + PI/2.5) + 1.0; 
   //set points
   float thita = PI - step * PI;
-  float phi = edge_angle * PI;
+  float phi = ediv * PI;
   float z = HEAD_SIZE * synth * sin(thita) * cos(phi) * scale;
   float x = HEAD_SIZE * synth * sin(thita) * sin(phi) * scale;
-  float y = HEAD_SIZE * synth * cos(thita);  
-  eye_pos_test = new PVector(x,y,z);
-  strokeWeight(15);
-  point(x,y,z);
-  println(eye_pos_test); //[ -0.0, -88.312454, -1.1835655E-5 ]
-  strokeWeight(1);
+  float y = HEAD_SIZE * synth * cos(thita); 
+  PVector pt = new PVector(x,y,z);
+  return pt;
+
 }
+
+
+
 
 
 void face_pt_set(){  
   eye_pos.x = HEAD_SIZE * 0.19;
   eye_pos.y = HEAD_SIZE * -0.08;
   eye_pos.z = HEAD_SIZE * 0.4;
+  println(eye_pos.x);
+  println(eye_pos.y);
+  println(eye_pos.z);
   //eye_pt
   float thick, r, x, y;
   float z = 0;
@@ -170,6 +158,8 @@ void head_mesh(){
   beginShape(TRIANGLE_STRIP);
   for(int i=0; i<HEAD_EDGE; i++){
     for(int j=0; j<HEAD_NODE; j++){
+      //point(head_pt[i][j].x,head_pt[i][j].y,head_pt[i][j].z);
+      //println("i: " + i + " j: "+ j + " " + head_pt[i][j]);
       if(i==HEAD_EDGE-1){
         vertex(head_pt[i][j].x,head_pt[i][j].y,head_pt[i][j].z);
         vertex(head_pt[0][j].x,head_pt[0][j].y,head_pt[0][j].z);
@@ -338,23 +328,5 @@ void make_eyelines(float angle, float length, float size){
   strokeWeight(1);
 }
 
-node_angle: 0.25
-edge_angle: 0.125
-step: 0.24062501
-amp: 0.1375
-ffreq: 3.0500002
-bfreq: 0.57000005
-fphase: 1.1706251
-bphase: 0.8096875
-front: 0.39483747
-back: 0.57007104
-p: 0.015625
-synth: 0.39757547
-scale: 1.591767
-thita: 2.3856468
-phi: 0.3926991
-z: 60.161037
-x: 24.91952
-y: -43.39276
-eye_pos_test: [ 24.91952, -43.39276, 60.161037 ]
+ 
       
