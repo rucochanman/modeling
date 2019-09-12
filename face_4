@@ -338,5 +338,23 @@ void make_eyelines(float angle, float length, float size){
   strokeWeight(1);
 }
 
- 
+node_angle: 0.25
+edge_angle: 0.125
+step: 0.24062501
+amp: 0.1375
+ffreq: 3.0500002
+bfreq: 0.57000005
+fphase: 1.1706251
+bphase: 0.8096875
+front: 0.39483747
+back: 0.57007104
+p: 0.015625
+synth: 0.39757547
+scale: 1.591767
+thita: 2.3856468
+phi: 0.3926991
+z: 60.161037
+x: 24.91952
+y: -43.39276
+eye_pos_test: [ 24.91952, -43.39276, 60.161037 ]
       
