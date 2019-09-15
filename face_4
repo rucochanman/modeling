@@ -17,7 +17,7 @@ PVector[][] eye_pt = new PVector[EYE_NODE][EYE_EDGE];
 
 void setup(){
   size(500, 500, P3D);
-  noLoop();
+  //noLoop();
   noStroke();
   frameRate(3);
   head_pt_set();
@@ -35,8 +35,8 @@ void draw(){
   pushMatrix();
   translate(width/2,height/2);
   scale(1.3);
-  //rotateX(0*PI/8);
-  rotateY(-4*PI/8);
+  //rotateX(-4*PI/8);
+  rotateY(frameCount*PI/8);
   make_face();
   //PVector temp = head_pt_cal( 0.05882353 , -0.1);
   //println(temp);
@@ -63,18 +63,21 @@ void head_pt_set(){
 
 
 PVector head_pt_cal(float ndiv, float ediv){
+  if(ndiv==0||ndiv==1){ediv=0;}
   float pidiv = abs(ediv);
   //variables
-  float amp1 = 0.16;
-  float amp2 = 0.11;
+  float famp1 = 0.15;
+  float bamp1 = 0.15;
+  float amp2 = 0.1;  
   float ffreq1 = 3.2;
   float ffreq2 = 2.6;
-  float bfreq1 = 0.0;
-  float bfreq2 = 1.077;
-  float phase1 = 1.65;
+  float bfreq1 = 0.4;
+  float bfreq2 = 0.9;
+  float fphase1 = 1.5;
+  float bphase1 = 2.0;  
   float fphase2 = -0.5;
-  float bphase2 = -2.0;
-  float c = 0.44;
+  float bphase2 = -1.8;
+  float c = 0.41;
   //cal step
   float cp = 0.4;
   float x1 = 3 * cp * ndiv * pow((1-ndiv),2);
@@ -82,17 +85,22 @@ PVector head_pt_cal(float ndiv, float ediv){
   float x3 = pow(ndiv,3);
   float step = x1 + x2 + x3;
   //params
-  float amp = (1-ndiv)*amp1 + ndiv*amp2;
+  float famp = (1-ndiv)*famp1 + ndiv*amp2;
+  float bamp = (1-ndiv)*bamp1 + ndiv*amp2;  
   float ffreq = (1-ndiv)*ffreq1 + ndiv*ffreq2;
   float bfreq = (1-ndiv)*bfreq1 + ndiv*bfreq2;
-  float fphase = (1-step)*phase1 + step*fphase2; 
-  float bphase = (1-step)*phase1 + step*bphase2;
+  float fphase = (1-step)*fphase1 + step*fphase2; 
+  float bphase = (1-step)*bphase1 + step*bphase2;
   //synthesis
-  float front = amp * sin(step*ffreq*PI+fphase) + c;
-  float back = amp * sin(step*bfreq*PI+bphase) + c;
-  float p = pow(pidiv,1.5);
+  float front = famp * sin(step*ffreq*PI+fphase) + c;
+  float back = bamp * sin(step*bfreq*PI+bphase) + c;
+  float scale = 0.15*sin(1.7*pidiv*PI+PI/3)+1.48;
+  float p = pow(pidiv,1.8);
+  if(p>0.5){
+    p=pow(1.0-p,1.8)+p;
+    scale = 0.12*sin(2.5*(pidiv-0.5)*PI-PI/4)+1.015;
+  }
   float synth = (1-p)*front + p*back;
-  float scale = (0.5-pow(pidiv*0.5,5)) * sin(0.6*pidiv*PI + PI/2.5) + 1.0; 
   //set points
   float thita = PI - step * PI;
   float phi = ediv * PI;
