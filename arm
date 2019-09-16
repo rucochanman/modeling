@@ -2,14 +2,13 @@ void arm_thick_set(){
   for(int i=0; i<ARM1_NODE; i++){
     float h = ARM1_LENGTH/2;
     float t = i * 1.0/(ARM1_NODE-1);
-    thickh1[i] = h * cos(pow(t,1.3)*(QUARTER_PI*0.6));
-    thickw1[i] = thickh1[i]; 
+    arm1r[i] = h * cos(pow(t,1.3)*(QUARTER_PI*0.6));
   }
   for(int i=0; i<ARM2_NODE; i++){
-    float r = thickh1[ARM1_NODE-1];
+    float r = arm1r[ARM1_NODE-1];
     float t = i * 1.0/(ARM2_NODE-1);
-    thickh2[i] = r * cos(pow(t,0.8)*QUARTER_PI);
-    thickw2[i] = r * cos(pow(t,0.8)*QUARTER_PI*0.7);   
+    arm2h[i] = r * cos(pow(t,0.8)*QUARTER_PI);
+    arm2w[i] = r * cos(pow(t,0.8)*QUARTER_PI*0.7);   
   }
 }
 
@@ -17,8 +16,8 @@ void hand_pt_set(){
   float l = HAND_LENGTH/HAND_NODE;
   for(int i=0;i<HAND_NODE;i++){
     float t = i * 1.0/(HAND_NODE-1);
-    float h = thickh2[ARM2_NODE-1] * cos(t*QUARTER_PI*1.3);
-    float w = thickw2[ARM2_NODE-1] * cos(t*QUARTER_PI*1.3); 
+    float h = arm2h[ARM2_NODE-1] * cos(t*QUARTER_PI*1.3);
+    float w = arm2w[ARM2_NODE-1] * cos(t*QUARTER_PI*1.3); 
     float x = i * l; 
     for(int j=0;j<ARM_EDGE;j++){
       float y = h * sin(j * TWO_PI/ARM_EDGE);
@@ -26,16 +25,19 @@ void hand_pt_set(){
       hand_pt[i][j] = new PVector(x,y,z);
     }
   }
+  
   float fng_y = 0;
-  float fng_x = HAND_LENGTH*0.7;
-  float fng1_z = thickw2[ARM2_NODE-1]/1.2;
-  float fng2_z = thickw2[ARM2_NODE-1]/2;
+  
+  /*
+  float fng_xx = HAND_LENGTH*0.7;
+  float fng1_z = arm2w[ARM2_NODE-1]/1.2;
+  float fng2_z = arm2w[ARM2_NODE-1]/2;
   float fng3_z = 0;   
-  float fng4_z = -thickw2[ARM2_NODE-1]/2; 
-  PVector fng1_pos = new PVector(fng_x/2, fng_y, fng1_z);
-  PVector fng2_pos = new PVector(fng_x*0.9, fng_y, fng2_z); 
-  PVector fng3_pos = new PVector(fng_x, fng_y, fng3_z);    
-  PVector fng4_pos = new PVector(fng_x*0.9, fng_y, fng4_z);      
+  float fng4_z = -arm2w[ARM2_NODE-1]/2; 
+  PVector fng1_pos = new PVector(fng_xx/2, fng_y, fng1_z);
+  PVector fng2_pos = new PVector(fng_xx*0.9, fng_y, fng2_z); 
+  PVector fng3_pos = new PVector(fng_xx, fng_y, fng3_z);    
+  PVector fng4_pos = new PVector(fng_xx*0.9, fng_y, fng4_z);      
   float fng1_angle = -PI/8;
   float fng2_angle = -PI/8 * 3;
   float fng3_angle = -PI/8 * 4;
@@ -43,7 +45,19 @@ void hand_pt_set(){
   fng1_pt = fing_make(fng1_pos, fng1_angle);
   fng2_pt = fing_make(fng2_pos, fng2_angle);  
   fng3_pt = fing_make(fng3_pos, fng3_angle);    
-  fng4_pt = fing_make(fng4_pos, fng4_angle);        
+  fng4_pt = fing_make(fng4_pos, fng4_angle);  
+  */
+  
+  float[] fng_angle = {-PI/8, -PI/8*3, -PI/2, -PI/8*5};
+  float r = arm2w[ARM2_NODE-1];
+  float b = HAND_LENGTH*0.7;
+  float[] fng_z = {r/1.2, r/2, 0, -r/2};
+  float[] fng_x = {b*0.5, b*0.9, b, b*0.9};
+  
+  for(int i=0;i<FING_NUM;i++){
+    PVector pos = new PVector(fng_x[i],0,fng_z[i]);
+    fng_pt[i] = fing_make(pos, fng_angle[i]);
+  }
 }
 
 PVector[][] fing_make(PVector pos, float phi){
@@ -78,7 +92,7 @@ void arm_make(float value1, float value2, float segrot1, float segrot2){
   }  
   rotateX(segrot1);
   armrot=0;
-  arm_pt_set(ARM1_NODE, ep1, cp1, thickh1, thickw1);
+  arm_pt_set(ARM1_NODE, ep1, cp1, arm1r, arm1r);
   translate(ep1.x, ep1.y, ep1.z);
   rotateX(segrot2);
   float l2 = ARM2_LENGTH;  
@@ -86,7 +100,7 @@ void arm_make(float value1, float value2, float segrot1, float segrot2){
   PVector ep2 = new PVector(l2*cos(armrot-ud2), l2*sin(armrot-ud2)); 
   PVector cp2 = new PVector(cos(armrot)*l2/2,abs(sin(armrot)*l2/2));
   if(value1<0){cp2.y=sin(armrot)*l2/2;}
-  arm_pt_set(ARM2_NODE, ep2, cp2, thickh2, thickw2);
+  arm_pt_set(ARM2_NODE, ep2, cp2, arm2h, arm2w);
   translate(ep2.x, ep2.y, ep2.z);
   rotateZ(armrot);
   hand_make();
