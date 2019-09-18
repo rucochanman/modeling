@@ -8,39 +8,7 @@ void head_pt_set(){
       head_pt[i][j] = head_pt_cal(ndiv, ediv);
     }
   }
-  //eye_pt
-  float z = 0;
-  for(int i=0;i<EYE_NODE;i++){
-    float r = (EYE_NODE-1-i) * HEAD_SIZE/5.8/EYE_NODE;
-    float thick = pow((EYE_NODE-i)*1.0/EYE_NODE,4)*8;
-    z += thick;
-    for(int j=0;j<EYE_EDGE;j++){
-      float x = r * cos(j*TWO_PI/(EYE_EDGE-1));
-      float y = r * sin(j*TWO_PI/(EYE_EDGE-1));
-      if(i==0){z = thick - abs(r/8*cos(j*TWO_PI/(EYE_EDGE-1)));}
-      eye_pt[i][j] = new PVector(x,y,z);
-    }
-  }
-  //eye_pos 
-  eye_pos = head_pt_cal(0.5, 0.16);
-  eye_pos.z = eye_pos.z * 0.91;
-  //eye_lash_pos
-  elL_pos = head_pt_cal(0.36,0.11);
-  elR_pos = head_pt_cal(0.36,-0.22);
-  //eye_brown_pos
-  eb1_pos = head_pt_cal(0.20,0.14);
-  eb2_pos = head_pt_cal(0.21,0.20); 
-  //hilights_pos
-  h1L_pos = head_pt_cal(0.43,0.15);
-  h1L_pos.z *= 1.15;
-  h2L_pos = head_pt_cal(0.55,0.2);
-  h2L_pos.z *= 1.14;
-  h1R_pos = head_pt_cal(0.43,-0.2);
-  h1R_pos.z *= 1.15;
-  h2R_pos = head_pt_cal(0.54,-0.135);
-  h2R_pos.z *= 1.14; 
-  //mouth_pos
-  mo_pos = head_pt_cal(0.79,0); 
+
 }
 
 PVector head_pt_cal(float ndiv, float ediv){
@@ -82,9 +50,10 @@ PVector head_pt_cal(float ndiv, float ediv){
   //set points
   float thita = PI - step * PI;
   float phi = ediv * PI;
-  float z = HEAD_SIZE * synth * sin(thita) * cos(phi) * scale;
-  float x = HEAD_SIZE * synth * sin(thita) * sin(phi) * scale;
-  float y = HEAD_SIZE * synth * cos(thita); 
+  float size = SCALE;
+  float z = size * synth * sin(thita) * cos(phi) * scale;
+  float x = size * synth * sin(thita) * sin(phi) * scale;
+  float y = size * synth * cos(thita); 
   PVector pt = new PVector(x,y,z);
   return pt;
 }
@@ -104,78 +73,59 @@ PVector head_pt_cal(float ndiv, float ediv){
 
 void make_face(float lr, float fb, float tw, PVector pos){
   
+  boolean left = true;
+  boolean right = false;
+  float line_width = SCALE/40;
+  
+  //head
   pushMatrix();
   translate(pos.x, pos.y, pos.z);
-  rotateZ(lr);
-  rotateX(fb);
+  rotateZ(-lr-PI/2);
+  rotateX(-fb-PI/2);
   rotateY(tw);
-  println(lr); //-1.8
-  println(fb); //-1.57
-  println(tw); //1.25
-  //head
+  println(tw);
   fill(HEAD_COL);
   head_mesh(); 
   
-  //eyeL
+  //eye
   fill(EYE_COL);
-  pushMatrix();
-  translate(eye_pos.x,eye_pos.y,eye_pos.z);
-  rotateX(PI/12);
-  rotateY(PI/12);
-  make_mesh(EYE_NODE, EYE_EDGE, eye_pt);
-  popMatrix(); 
-  //eyeR
-  pushMatrix();
-  translate(-eye_pos.x,eye_pos.y,eye_pos.z);
-  rotateX(PI/12);
-  rotateY(-PI/12);
-  make_mesh(EYE_NODE, EYE_EDGE, eye_pt);
-  popMatrix();  
-  
-  //eye_lashL
-  stroke(LINE_COL);
-  strokeWeight(el_w);
-  pushMatrix();
-  translate(elL_pos.x,elL_pos.y,elL_pos.z);
-  line(0,0,0,el_r*cos(PI/4),el_r*sin(PI/4),0);
-  point(el_r*cos(PI/4),el_r*sin(PI/4),0);
-  popMatrix();  
-  //eye_lashR
-  pushMatrix();
-  translate(elR_pos.x,elR_pos.y,elR_pos.z);
-  line(0,0,0,el_r*cos(PI/4),el_r*sin(PI/4),0);
-  point(el_r*cos(PI/4),el_r*sin(PI/4),0);
-  popMatrix();    
-  
-  //eye_brownL
-  strokeWeight(li_w);
-  point(eb1_pos.x,eb1_pos.y,eb1_pos.z);
-  point(eb2_pos.x,eb2_pos.y,eb2_pos.z);   
-  line(eb1_pos.x,eb1_pos.y,eb1_pos.z,eb2_pos.x,eb2_pos.y,eb2_pos.z); 
-  //eye_brownR
-  point(-eb1_pos.x,eb1_pos.y,eb1_pos.z);
-  point(-eb2_pos.x,eb2_pos.y,eb2_pos.z);   
-  line(-eb1_pos.x,eb1_pos.y,eb1_pos.z,-eb2_pos.x,eb2_pos.y,eb2_pos.z);
-  make_mouth();
+  make_eye(left);
+  make_eye(right);
   
   //hilights
   fill(255);
-  noStroke();
-  make_hilights(h1_r, PI/10, PI/12, h1L_pos);
-  make_hilights(h1_r, PI/10, -PI/10, h1R_pos);
-  make_hilights(h2_r, PI/16, PI/8, h2L_pos);
-  make_hilights(h2_r, PI/20, -PI/18, h2R_pos);
+  float h1_r = SCALE/18.5;
+  float h2_r = h1_r/2;
+  make_hilights(h1_r, PI/10, PI/20, 0.43, 0.15); //h1L
+  make_hilights(h1_r, PI/10, -PI/10, 0.43, -0.2); //h1R
+  make_hilights(h2_r, PI/16, PI/10, 0.55, 0.2); //h2L
+  make_hilights(h2_r, PI/16, -PI/20, 0.55, -0.12); //h2R
+  
+  //eye_lash
+  stroke(LINE_COL);
+  strokeWeight(line_width);
+  make_eyelash(left);
+  make_eyelash(right);  
+  
+  //eye_brown
+  strokeWeight(line_width*0.8);
+  make_eyebrow(left);
+  make_eyebrow(right); 
+  //mouth
+  make_mouth();
   
   popMatrix();
+  
+    strokeWeight(1);  
   
 }
 
 
 void make_mouth(){
-  float wr = mo_w;
+  float wr = SCALE/7600;
   float hr = wr*0.9;
   PVector pt;
-  int TIP_EDGE = int(HEAD_SIZE/10);  
+  int TIP_EDGE = int(SCALE/10);  
   for(int i=0;i<TIP_EDGE;i++){
     float x = wr * cos(i * PI/(TIP_EDGE-1)) + wr;
     float y = hr * sin(i * PI/(TIP_EDGE-1))+0.7;
@@ -186,7 +136,9 @@ void make_mouth(){
 }
 
 
-void make_hilights(float r, float xang, float yang, PVector pos){
+void make_hilights(float r, float xang, float yang, float ndiv, float ediv){
+  PVector pos = head_pt_cal(ndiv, ediv);
+  pos.z *= 1.15;
   pushMatrix();
   translate(pos.x,pos.y,pos.z);
   rotateX(xang);
@@ -202,6 +154,65 @@ void make_hilights(float r, float xang, float yang, PVector pos){
   popMatrix();
 }
 
+
+void make_eye(boolean l){
+  PVector[][] pt = new PVector[EYE_NODE][EYE_EDGE];
+  float xdiv = 0.16;
+  float yang = PI/12;
+  float size = SCALE/5.8;
+  if(!l){
+    xdiv *= -1;
+    yang *= -1;
+  }
+  PVector pos = head_pt_cal(0.5, xdiv);
+  pos.z *= 0.91;
+  pushMatrix();
+  translate(pos.x,pos.y,pos.z);
+  rotateX(PI/12);
+  rotateY(yang);
+  float z = 0;
+  for(int i=0;i<EYE_NODE;i++){
+    float r = (EYE_NODE-1-i) * size/EYE_NODE;
+    float thick = pow((EYE_NODE-i)*1.0/EYE_NODE,4)*8;
+    z += thick;
+    for(int j=0;j<EYE_EDGE;j++){
+      float x = r * cos(j*TWO_PI/(EYE_EDGE-1));
+      float y = r * sin(j*TWO_PI/(EYE_EDGE-1));
+      if(i==0){z = thick - abs(r/8*cos(j*TWO_PI/(EYE_EDGE-1)));}
+      pt[i][j] = new PVector(x,y,z);
+    }
+  } 
+  make_mesh(EYE_NODE, EYE_EDGE, pt);
+  popMatrix();
+}
+
+
+void make_eyelash(boolean l){
+  float r = -SCALE/20;
+  float xdiv = 0.11;
+  if(!l){xdiv = -0.22;}
+  PVector pos1 = head_pt_cal(0.36, xdiv);
+  PVector pos2 = new PVector(pos1.x, pos1.y, pos1.z); 
+  pos2.x += r*cos(PI/4);
+  pos2.y += r*sin(PI/4);  
+  line(pos1.x, pos1.y, pos1.z, pos2.x, pos2.y, pos2.z);
+  point(pos2.x, pos2.y, pos2.z);
+}
+
+
+void make_eyebrow(boolean l){
+  float xdiv1 = 0.14;
+  float xdiv2 = 0.20;
+  if(!l){
+    xdiv1 *= -1;
+    xdiv2 *= -1;    
+  }
+  PVector pos1 = head_pt_cal(0.20,xdiv1);
+  PVector pos2 = head_pt_cal(0.21,xdiv2);
+  line(pos1.x,pos1.y,pos1.z,pos2.x,pos2.y,pos2.z);
+  point(pos1.x,pos1.y,pos1.z);
+  point(pos2.x,pos2.y,pos2.z);
+}
 
 
 void head_mesh(){
