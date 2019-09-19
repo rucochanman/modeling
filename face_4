@@ -82,8 +82,7 @@ void make_face(float lr, float fb, float tw, PVector pos){
   translate(pos.x, pos.y, pos.z);
   rotateZ(-lr-PI/2);
   rotateX(-fb-PI/2);
-  rotateY(tw);
-  println(tw);
+  rotateY(PI-tw);
   fill(HEAD_COL);
   head_mesh(); 
   
@@ -116,7 +115,7 @@ void make_face(float lr, float fb, float tw, PVector pos){
   
   popMatrix();
   
-    strokeWeight(1);  
+  strokeWeight(1);  
   
 }
 
