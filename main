@@ -3,9 +3,13 @@ float SCALE = 150;
 
 //foot
 int FOOT_EDGE = 8;
-int FOOT1_NODE = 8;
+int FOOT1_NODE = 12;
 int FOOT2_NODE = 8;
-
+float FOOT1_LENGTH = SCALE/3;
+float FOOT2_LENGTH = SCALE/4;
+float[] foot1r = new float[FOOT1_NODE];
+float[] foot2r = new float[FOOT2_NODE];
+float footrot;
 
 //arm
 PVector armL_pos;
@@ -29,8 +33,9 @@ PVector[][][] fng_pt = new PVector[FING_NUM][FING_NODE][FING_EDGE];
 
 //body
 int BODY_NODE = 12;
-int BODY_EDGE = 16;
-
+int BODY_EDGE = 4*4;
+float BODY_HEIGHT = SCALE/3.2;
+float BODY_WIDTH = BODY_HEIGHT;
 
 
 //head
@@ -59,7 +64,7 @@ float[] param_arm2_bend = {0,0.1,0.2,0.5,0.8,1,0.8,0.5,0.4,0.3,0.2,0.1};
 
 void setup(){
   size(500,500,P3D);
-  //noLoop();
+  noLoop();
   frameRate(3);
   center = new PVector(width/2, height/2, 0);
   hand_pt_set();
@@ -73,16 +78,17 @@ void draw(){
  boolean r = false;  
  
  pushMatrix();
- translate(center.x, center.y*1.5, 0); //move center
- //rotateX(-PI/2);
+ translate(center.x, center.y, 0); //move center
+ rotateY(-PI/2);
  //body_make(param_body_lr[step],0,param_body_tw[step]);
  //make_head();
  make_body(0.0,0.0,0.0);
+ make_foot();
  //make_arm(l,1,0.3,0,0);
  //make_arm(r,-0.5,0.2,PI,0);
  //make_hat();
- make_arm(l,param_arm1_bend[step],param_arm2_bend[step],0,0);
- make_arm(r,param_arm1_bend[step],param_arm2_bend[step],0,0);
+ //make_arm(l,param_arm1_bend[step],param_arm2_bend[step],0,0);
+ //make_arm(r,param_arm1_bend[step],param_arm2_bend[step],0,0);
  popMatrix();
 
 }
