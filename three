@@ -1,0 +1,185 @@
+// ページの読み込みを待つ
+window.addEventListener('load', init);
+
+function init() {
+
+  // サイズを指定
+  const width = 800;
+  const height = 400;
+
+  // レンダラーを作成
+  let renderer = new THREE.WebGLRenderer({
+        canvas: document.querySelector('#myCanvas')
+      });
+  //renderer.setClearColor(0xcccccc, 1.0);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(width, height);
+
+  // シーンを作成
+  let scene = new THREE.Scene();
+
+  // カメラを作成
+  let camera = new THREE.PerspectiveCamera(45, width / height);
+  camera.position.set(0, 0, 10);
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+
+/////////////////////////////////////////////////////////////////
+
+  //def共通
+  const nPos = 3;
+  const vRect = nPos * 4;
+
+  //arm
+  const arm_node = 12;
+  const arm_edge = 8;
+  const arm1_len = 3;
+  const arm2_len = 3;
+  let arm_rot = 0;
+  let arm_pos = new THREE.Vector3(-1, 1, 0);
+  var arm_L = new THREE.Group();
+
+  let arm1_mat = new THREE.MeshLambertMaterial();
+  let arm2_mat = new THREE.MeshLambertMaterial({color: 0x6699FF});
+  let arm1_obj = new THREE.Mesh();
+
+  let thick1 = new Array(arm_node);
+  let thick2 = new Array(arm_node);
+
+  for(let i=0; i<arm_node; i++){
+    let t = i * 1.0/(arm_node-1);
+    thick1[i] = 0.8;
+    thick2[i] = 0.8 * Math.cos(Math.pow(t,0.8)*Math.PI/4);
+  }
+
+  //マッピング
+  function mapping(value, inMin, inMax, outMin, outMax){
+    let norm = (value - inMin)/(inMax - inMin);
+    let out = norm * (outMax - outMin) + outMin;
+    return out;
+  }
+
+  //
+  function makeArm(v1, rot1, v2, rot2){
+
+    const l1 = arm1_len;
+    const l2 = arm2_len;
+    const axis = new THREE.Vector3(1, 0, 0);
+
+    //arm1
+    let rad1 = mapping(v1, -1.0, 2.0, Math.PI/4, -Math.PI/2);
+    let ep1 = new THREE.Vector3(l1*Math.cos(rad1), l1*Math.sin(rad1), 0);
+    let cp1 = new THREE.Vector2(0, 0);
+    if(ep1.y>0){
+      cp1.y = arm1_len/2 * Math.sin(rad1);
+    }else{
+      cp1.x = arm1_len/2 * -Math.sin(rad1);
+    }
+    arm1_obj = arm_ptSet(ep1, cp1, thick1, arm1_mat);
+
+    //arm2
+    let rad2 = mapping(v2, 0.0, 1.0, 0.0, -2.5*Math.PI/4);
+    rad2 = arm_rot + rad2;
+    let ep2 = new THREE.Vector3(l2*Math.cos(rad2), l2*Math.sin(rad2), 0);
+    //let cp2 = new THREE.Vector2(l2*Math.cos(arm_rot), l2*Math.sin(arm_rot));
+    let cp2 = new THREE.Vector2(2,-2.5);
+    //console.log(l2*Math.cos(arm_rot));
+    //console.log(l2*Math.sin(arm_rot));
+    arm2_obj = arm_ptSet(ep2, cp2, thick2, arm2_mat);
+
+
+    //回転
+    arm1_obj.rotation.x = rot1;
+    let arm1_end = ep1.applyAxisAngle(axis, rot1);
+
+    arm2_obj.rotation.x = rot1+rot2;
+    arm2_obj.position.set(arm1_end.x, arm1_end.y, arm1_end.z);
+
+
+    //グループ化
+    arm_L.add(arm1_obj);
+    arm_L.add(arm2_obj);
+    arm_L.position.set(arm_pos.x, arm_pos.y, arm_pos.z);
+
+    scene.add(arm_L);
+
+
+  }
+
+
+  function arm_ptSet(ep, cp, thick, mat){
+    let pt = [];
+    let rot = 0;
+    let zpos = new THREE.Vector2( 0, 0 );
+    const center = new THREE.Vector2( 0, 0 );
+    for(var i=0; i<arm_node; i++){
+      pt[i] = [];
+      //bone
+      let t = i * 1.0/(arm_node-1);
+      let x = (2 * cp.x * t * (1-t)) + (ep.x * Math.pow(t,2));
+      let y = (2 * cp.y * t * (1-t)) + (ep.y * Math.pow(t,2));
+      rot = Math.atan2(y-zpos.y, x-zpos.x);
+      if(i==0){rot=arm_rot;}
+      zpos = new THREE.Vector2( x, y );
+      //set points
+      for(var j=0; j<arm_edge; j++){
+        let z = thick[i] * Math.cos(j*2*Math.PI/arm_edge);
+        let v = new THREE.Vector2(0, thick[i] * Math.sin(j*2*Math.PI/arm_edge));
+        v = v.rotateAround(center, rot);
+        pt[i][j] = [v.x+x, v.y+y, z];
+      }
+    }
+    arm_rot = rot;
+    let geometry = setGeometry(arm_node, arm_edge, pt);
+    let obj = new THREE.Mesh(geometry, mat);
+    return obj;
+  }
+
+
+
+
+  makeArm(1, Math.PI/8, 1, 0);
+
+
+
+
+  function setGeometry(nNode, nEdge, pt){
+    let numVertices = vRect*(nNode-1)*nEdge;
+    let vertices = new Float32Array(numVertices);
+    for(var i=0; i<nNode-1; i++){
+      for(var j=0; j<nEdge; j++){
+        for(var k=0;k<nPos;k++){
+          let n = i*vRect*nEdge + j*vRect + k;
+          vertices[n+nPos*0] = pt[i][j][k];
+          vertices[n+nPos*1] = pt[i][(j+1)%nEdge][k];
+          vertices[n+nPos*2] = pt[i+1][(j+1)%nEdge][k];
+          vertices[n+nPos*3] = pt[i+1][j][k];
+        }
+      }
+    }
+    //頂点インデックス
+    let order = [0,1,2,2,3,0];
+    let indices = new Uint16Array(numVertices/2);
+    for(let i=0; i<numVertices/12; i++){
+      for(let j=0; j<order.length; j++){
+        indices[i*6+j] = i*4+order[j];
+      }
+    }
+    let geometry = new THREE.BufferGeometry();
+    geometry.addAttribute('position', new THREE.BufferAttribute(vertices, nPos));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    geometry.computeVertexNormals();
+    return geometry;
+  }
+
+
+
+  //ライト
+  const directionalLight = new THREE.DirectionalLight(0xffffff,1);
+  directionalLight.position.set(0,1,10);
+  scene.add(directionalLight);
+
+  // レンダリング
+  renderer.render(scene, camera);
+
+}
