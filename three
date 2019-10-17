@@ -11,7 +11,7 @@ function init() {
   let renderer = new THREE.WebGLRenderer({
         canvas: document.querySelector('#myCanvas')
       });
-  //renderer.setClearColor(0xcccccc, 1.0);
+  renderer.setClearColor(0xcccccc, 1.0);
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(width, height);
 
@@ -20,65 +20,59 @@ function init() {
 
   // カメラを作成
   let camera = new THREE.PerspectiveCamera(45, width / height);
-  camera.position.set(0, 0, 10);
+  //let camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, 10, 1000 );
+  camera.position.set(0, 0, 100);
   camera.lookAt(new THREE.Vector3(0, 0, 0));
 
 
 /////////////////////////////////////////////////////////////////
 
-  //def共通
+  //共通def
   const nPos = 3;
   const vRect = nPos * 4;
 
-  //arm
+  //cylinder
   const numNode = 5;
   const jointNode = 6;
-  const numEdge = 8;
-  const arm1Length = 3;
-  const arm2Length = 3;
-  let endRot = 0;
-  let arm_pos = new THREE.Vector3(-1, 1, 0);
+  const numEdge = 12;
+  let endAngle = 0;
   let sPos = new THREE.Vector2(0, 0);
-  var arm_L = new THREE.Group();
 
-  let arm1_mat = new THREE.MeshLambertMaterial();
-  let arm2_mat = new THREE.MeshPhongMaterial({
+
+
+
+
+  //arm
+  const arm1Length = 20;
+  let arm2Length = arm1Length*1.5;
+  let arm_pos = new THREE.Vector3(-1.5, 2, 0);
+  //マテリアル
+  let arm1_mat = new THREE.MeshNormalMaterial();
+  let arm2_mat = new THREE.MeshNormalMaterial({
                color: 0x990099, //球の色
                wireframe: false //ワイヤーフレーム有効
       });
-  let arm1_obj = new THREE.Mesh();
 
-  const arm_r = 0.8;
+  //thick
+  const arm_r = 8;
   let arm1_r = new Array(numNode);
   let arm2_h = new Array(numNode);
   let arm2_w = new Array(numNode);
-
-  //thick
   for(let i=0; i<numNode; i++){
     let t = i * 1.0/(numNode-1);
     let r1 = arm_r;
     let r2 = r1 * Math.cos(1*Math.PI/7);
     arm1_r[i] = r1 * Math.cos(Math.pow(t,1.3)*Math.PI/7);
-    arm2_h[i] = r2 * Math.cos(Math.pow(t,0.8)*Math.PI/3);
-    arm2_w[i] = r2 * Math.cos(Math.pow(t,0.8)*Math.PI/5);
+    arm2_h[i] = r2 * Math.cos(Math.pow(t,0.9)*Math.PI/3);
+    arm2_w[i] = r2 * Math.cos(Math.pow(t,0.9)*Math.PI/4);
   }
 
-  //マッピング
-  function mapping(value, inMin, inMax, outMin, outMax){
-    let norm = (value - inMin)/(inMax - inMin);
-    let out = norm * (outMax - outMin) + outMin;
-    return out;
-  }
+
 
   //
   function makeArm(v1, rot1, v2, rot2){
-
-    const l1 = arm1Length;
-    const l2 = arm2Length;
-    const axis = new THREE.Vector3(1, 0, 0);
-
     //arm1
-
+    const l1 = arm1Length;
     let bend1 = mapping(v1, -1.0, 2.0, Math.PI/4, -Math.PI/2);
     let ep1 = new THREE.Vector3(l1*Math.cos(bend1), l1*Math.sin(bend1), 0);
     let cp1 = new THREE.Vector2(0, 0);
@@ -87,50 +81,36 @@ function init() {
     }else{
       cp1.x = l1/2 * -Math.sin(bend1);
     }
-    arm1_obj = makeCylinder(ep1, cp1, sPos, arm1_r, arm1_r, arm1_mat);
-    //console.log(endRot);
+    let arm1_obj = makeCylinder(ep1, cp1, sPos, arm1_r, arm1_r, arm1_mat);
 
-    let bend2 = -Math.PI/4;
-    makeJoint(bend2, ep1);
-    //console.log(endRot);
-
-    let bend3 = endRot;
-    //endRot = bend3;
-    //console.log(endRot);
+    //joint+arm2
+    let bend2 = mapping(v2, 0.0, 1.5, 0, 3 * -Math.PI/4);
+    let joint_obj = makeJoint(arm1_r[numNode-1], bend2, ep1);
+    let bend3 = bend1+bend2;
+    let l2 = arm2Length;
     let ep2 = new THREE.Vector3(l2*Math.cos(bend3), l2*Math.sin(bend3), 0);
     let cp2 = new THREE.Vector2(0, 0);
-    let arm2_obj = makeCylinder(ep2, cp2, sPos, arm2_h, arm2_w, arm2_mat);
+    let arm2_obj = makeCylinder(ep2, cp2, sPos, arm2_w, arm2_w, arm2_mat);
 
-    //arm2
-    //let rad2 = mapping(v2, 0.0, 1.0, 0.0, -2.5*Math.PI/4);
-    //rad2 = endRot + rad2;
-    //let ep2 = new THREE.Vector3(l2*Math.cos(rad2), l2*Math.sin(rad2), 0);
-    //let cp2 = new THREE.Vector2(l1/1.5*Math.cos(endRot), l1/1.5*Math.sin(endRot));
-    //let cp2 = new THREE.Vector2(1,1);
-    //arm2_obj = makeCylinder(ep2, cp2, arm2_w, arm2_h, arm2_mat);
+    //grouping
+    let armG = new THREE.Group();
+    let armG2 = new THREE.Group();
+    armG2.add(arm2_obj);
+    armG2.add(joint_obj);
 
+    //rotation
+    let axis = new THREE.Vector3(Math.cos(bend1),Math.sin(bend1),0).normalize();
+    let angle = rot2;
+    let q = new THREE.Quaternion();
+    q.setFromAxisAngle(axis,angle);
+    armG2.applyQuaternion(q);
 
-    //回転
-    arm1_obj.rotation.x = rot1;
-    let arm1_end = ep1.applyAxisAngle(axis, rot1);
+    armG.add(arm1_obj);
+    armG.add(armG2);
+    armG.rotation.x = rot1;
+    armG.position.set(arm_pos.x, arm_pos.y, arm_pos.z);
 
-
-    //arm2_obj.rotation.x = rot1+rot2;
-    //arm2_obj.position.set(arm1_end.x, arm1_end.y, arm1_end.z);
-
-
-    //グループ化
-    //arm_L.add(arm1_obj);
-    //arm_L.add(arm2_obj);
-    //arm_L.position.set(arm_pos.x, arm_pos.y, arm_pos.z);
-    //arm_L.rotation.x = -Math.PI/4;
-
-    //scene.add(arm_L);
-    scene.add(arm1_obj);
-    //scene.add(arm2_obj);
-
-
-
+    scene.add(armG);
   }
 
 
@@ -146,7 +126,8 @@ function init() {
       let x = (2 * cp.x * t * (1-t)) + (ep.x * Math.pow(t,2));
       let y = (2 * cp.y * t * (1-t)) + (ep.y * Math.pow(t,2));
       rot = Math.atan2(y-zpos.y, x-zpos.x);
-      if(i==0){rot=endRot;}
+      if(i==0){rot=endAngle;}
+      if(i==numNode-1){rot=Math.atan2(ep.y, ep.x);}
       zpos = new THREE.Vector2( x, y );
       //set points
       for(var j=0; j<numEdge; j++){
@@ -156,24 +137,23 @@ function init() {
         pt[i][j] = [v.x+x+pos.x, v.y+y+pos.y, z];
       }
     }
-    endRot = rot;
+    endAngle = rot;
     let geometry = setGeometry(numNode, numEdge, pt);
     let obj = new THREE.Mesh(geometry, mat);
     return obj;
   }
 
 
-  function makeJoint(rad, pos){
+  function makeJoint(thick, rad, pos, mat){
     let pt = [];
-    let len = 
-    let r = arm_r * Math.cos(Math.PI/7);
+    let r = thick;
     let origin = new THREE.Vector2(0,-r);
     origin.add(pos);
-    origin.rotateAround(pos, endRot);
+    origin.rotateAround(pos, endAngle);
 
     for(let i=0; i<jointNode; i++){
       pt[i] = [];
-      let t = i * rad/(jointNode-1) + endRot;
+      let t = i * rad/(jointNode-1) + endAngle;
       let center = new THREE.Vector2(0,r);
       center.add(origin);
       center.rotateAround(origin, t);
@@ -186,19 +166,30 @@ function init() {
         pt[i][j] = [v.x, v.y, z];
       }
     }
+    //update values
+    let t1 = rad/(jointNode-1);
+    let t2 = (Math.PI - t1)/2;
+    let sublen = r * 2 * -Math.cos(t2) * (jointNode-1);
+    arm2Length -= sublen;
+    endAngle = rad + endAngle;
+    sPos = new THREE.Vector2(0,r).add(origin).rotateAround(origin, endAngle);
+
     let geometry = setGeometry(jointNode, numEdge, pt);
-    let mat = new THREE.MeshLambertMaterial({color: 0x990000});
-    let obj = new THREE.Mesh(geometry, mat);
-    scene.add(obj);
-    endRot = rad + endRot;
-    sPos = new THREE.Vector2(0,r).add(origin).rotateAround(origin, rad);
+    let obj = new THREE.Mesh(geometry, arm2_mat);
+    return obj;
 }
 
 
 
-  makeArm(0.9, 0, 0.0, 0);
+  makeArm(0.8, 0, 1, 0);
 
 
+  //マッピング
+  function mapping(value, inMin, inMax, outMin, outMax){
+    let norm = (value - inMin)/(inMax - inMin);
+    let out = norm * (outMax - outMin) + outMin;
+    return out;
+  }
 
 
   function setGeometry(nNode, nEdge, pt){
@@ -233,11 +224,11 @@ function init() {
 
 
   //ライト
-  const directionalLight = new THREE.DirectionalLight(0xffffff,1);
+  const directionalLight = new THREE.DirectionalLight(0xffffff,0.1);
   directionalLight.position.set(0,1,10);
   scene.add(directionalLight);
 
-  const envlight = new THREE.AmbientLight(0xFFFFFF, 0.2);
+  const envlight = new THREE.AmbientLight(0xFFFFFF, 0.8);
   scene.add(envlight);
   // レンダリング
   renderer.render(scene, camera);
