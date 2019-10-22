@@ -35,8 +35,11 @@ function init() {
   const numNode = 5;
   const jointNode = 6;
   const numEdge = 20;
+  const numFing = 4;
   let endAngle = 0;
+  const origin = new THREE.Vector3(0, 0, 0);
   let sPos = new THREE.Vector2(0, 0);
+
 
   //arm
   const arm1Length = 18;
@@ -44,6 +47,10 @@ function init() {
   let handLength = arm1Length*0.2;
   let fingLength = handLength*0.6;
   let arm_pos = new THREE.Vector3(-1.5, 2, 0);
+
+
+
+
 
   //マテリアル
   let arm1_mat = new THREE.MeshLambertMaterial({
@@ -76,31 +83,32 @@ function init() {
     arm1_r[i] = r1 * Math.cos(Math.pow(t,1.3)*Math.PI/7);
     arm2_h[i] = r2 * Math.cos(Math.pow(t,1.1)*Math.PI/3);
     arm2_w[i] = r2 * Math.cos(Math.pow(t,0.9)*Math.PI/4);
-    hand_h[i] = r3h * Math.cos(Math.pow(t,1.8)*Math.PI/2.5);
-    hand_w[i] = r3w * Math.cos(Math.pow(t,1.8)*Math.PI/2.8);
+    hand_h[i] = r3h * Math.cos(Math.pow(t,1.8)*Math.PI/2.4);
+    hand_w[i] = r3w * Math.cos(Math.pow(t,1.8)*Math.PI/5);
     fing_r[i] = r4 * Math.cos(Math.pow(t,1.5)*Math.PI/2.8);
-    //hand_h[i] = r3h;
-    //hand_w[i] = r3w;
-    //fing_r[i] = r4;
   }
-  hand_h[numNode] = 0;
-  hand_w[numNode] = 0;
   fing_r[numNode] = 0;
 
-  makeArm(0, 1 * Math.PI/2, 0.0, 0);
 
+
+
+
+
+
+  makeArm(0, 1 * Math.PI/2, 0.0, 0);
 
   function makeArm(v1, rot1, v2, rot2){
 
     const l1 = arm1Length;
     const l2 = arm2Length;
-    const lj = l1*0.99;
     const lh = handLength;
     const lf = fingLength;
+    const sj = l1 * 0.99;
+    let sf = lh * 0.6;
     let bend1 = mapping(v1, -1.0, 2.0, Math.PI/4, -Math.PI/2);
     let bend2 = mapping(v2, 0.0, 1.5, 0, 3 * -Math.PI/4);
     let bend3 = bend1+bend2;
-    let jPos = new THREE.Vector2(lj*Math.cos(bend1), lj*Math.sin(bend1));
+    let jPos = new THREE.Vector2(sj*Math.cos(bend1), sj*Math.sin(bend1));
     let cp0 = new THREE.Vector2(0, 0);
     let ep1 = new THREE.Vector2(l1*Math.cos(bend1), l1*Math.sin(bend1));
     let cp1 = new THREE.Vector2(0, 0);
@@ -117,57 +125,24 @@ function init() {
     let arm1_obj = makeCylinder(false, ep1, cp1, sPos, arm1_r, arm1_r, arm1_mat);
     let joint_obj = makeJoint(arm1_r[numNode-1], bend2, jPos);
     let arm2_obj = makeCylinder(false, ep2, cp0, sPos, arm2_h, arm2_w, arm2_mat);
+    let hand_obj = makeCylinder(false, hp, cp0, cp0, hand_h, hand_w, arm1_mat);
     sPos.add(ep2);
-    let hand_obj = makeCylinder(true, hp, cp0, sPos, hand_h, hand_w, arm1_mat);
-
-    let l = lh * 0.7;
     let sPos2 = new THREE.Vector3(sPos.x, sPos.y, 0);
-    let fsPos = new THREE.Vector3(l*Math.cos(bend3), l*Math.sin(bend3), l*Math.PI/2.3);
-    fsPos.add(sPos2);
-
-    let fng1_obj = makeCylinder(true, fp, cp0, cp0, fing_r, fing_r, arm1_mat);
-    fng1_obj.position.set(fsPos.x, fsPos.y, fsPos.z);
-    fng1_obj.rotation.y = -Math.PI/5;
-
-    l = lh * 0.95;
-    fsPos = new THREE.Vector3(l*Math.cos(bend3), l*Math.sin(bend3), l*Math.PI/16);
-    fsPos.add(sPos2);
-    let fng2_obj = makeCylinder(true, fp, cp0, cp0, fing_r, fing_r, arm1_mat);
-    fng2_obj.position.set(fsPos.x, fsPos.y, fsPos.z);
-    fng2_obj.rotation.y = -Math.PI/16;
-
-    fsPos = new THREE.Vector3(l*Math.cos(bend3), l*Math.sin(bend3), -l*Math.PI/6);
-    fsPos.add(sPos2);
-
-    let fng3_obj = makeCylinder(true, fp, cp0, cp0, fing_r, fing_r, arm1_mat);
-    fng3_obj.position.set(fsPos.x, fsPos.y, fsPos.z);
-    fng3_obj.rotation.y = Math.PI/16;
-
-    l = lh * 0.6;
-    fsPos = new THREE.Vector3(l*Math.cos(bend3), l*Math.sin(bend3), -l*Math.PI/2);
-    fsPos.add(sPos2);
-
-    let fng4_obj = makeCylinder(true, fp, cp0, cp0, fing_r, fing_r, arm1_mat);
-    fng4_obj.position.set(fsPos.x, fsPos.y, fsPos.z);
-    fng4_obj.rotation.y = Math.PI/4;
-
-    //fng2_obj.rotation.y = -Math.PI/16;
-    //fng2_obj.position.set(sPos.x, 0, 0);
-    //fng2_obj.rotation.y = -Math.PI/4;
-    //let fng3_obj = makeCylinder(true, fp, cp0, cp0, fing_r, fing_r, arm1_mat);
-    //fng3_obj.position.set(sPos.x, 0, 0);
-    //fng3_obj.rotation.y = -Math.PI/12;
-    //let fng4_obj = makeCylinder(true, fp, cp0, cp0, fing_r, fing_r, arm1_mat);
-    //fng4_obj.position.set(sPos.x, 0, 0);
-    //fng4_obj.rotation.y = Math.PI/12;
-
+    hand_obj.position.set(sPos2.x, sPos2.y, sPos2.z);
+    let fng_obj = new Array(numFing);
     let fingG = new THREE.Group();
-    fingG.add(fng1_obj);
-    fingG.add(fng2_obj);
-    fingG.add(fng3_obj);
-    fingG.add(fng4_obj);
 
-    //fng1_obj.position.set(0,-1,-3);
+    for(let i=0;i<numFing;i++){
+      fng_obj[i] = makeCylinder(true, fp, cp0, cp0, fing_r, fing_r, arm2_mat);
+      let zPos = [2.3, 16, -6, -2];
+      let angle = [-5, -16, 16, 4];
+      let l = [lh * 0.6, lh * 0.95, lh * 0.95, lh * 0.6];
+      let fPos = new THREE.Vector3(l[i]*Math.cos(bend3), l[i]*Math.sin(bend3), l[i]*Math.PI/zPos[i]);
+      fPos.add(sPos2);
+      fng_obj[i].position.set(fPos.x, fPos.y, fPos.z);
+      fng_obj[i].rotation.y = Math.PI/angle[i];
+      fingG.add(fng_obj[i]);
+    }
 
     //grouping
     let armG = new THREE.Group();
