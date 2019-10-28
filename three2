@@ -44,28 +44,29 @@ function init() {
   const CLOSE = false;
   const OPEN = true;
 
+  let sPos = new THREE.Vector2( 0,0 );
+  let sRad = 0;
 
   //cylinder
-  const armNode = 6;
-  //const handNode = armNode/2;
-  const jointNode = 6;
   const nEdge = 10;
+  const armNode = 6;
+  const jointNode = 6;
+  //const handNode = armNode/2;
 
-  let endAngle = 0;
+
+
   const armLength = 20;
   const armThick = 5; //p
 
-  let armBend1 = 0;
-  let armBend2 = 0;
-  let armRot1 = 0;
-  let armRot2 = 0;
 
-  let arm1Obj;
-  let arm1Geo;
-  let armjObj;
-  let armjGeo;
-  let arm2Obj;
-  let arm2Geo;
+  let objArmUprL;
+  let geoArmUprL;
+  let objArmJntL;
+  let geoArmJntL;
+  let objArmLwrL;
+  let geoArmLwrL;
+
+  let objHandL;
 
   let jPos;
 
@@ -79,7 +80,7 @@ function init() {
 
   //let armG1 = new THREE.Group();
 
-  arm_init( 1,1 );
+  arm_init( 0.5,0.5 );
 
   renderer.render(scene, camera);
 
@@ -90,7 +91,6 @@ function init() {
           count = 0;
         }
         arm_update( count, count );
-        console.log(count);
         requestAnimationFrame( animate );
         renderer.render( scene, camera );
   }
@@ -104,67 +104,69 @@ function init() {
 
     const arm_mat = new THREE.MeshPhongMaterial({color: 0x008800});
     const hand_mat = new THREE.MeshPhongMaterial({color: 0x660066});
-    let {ep1, cp1, ep2, cp2} = getBezierpt(v1, v2);
+
+    //mapping
+    const bend1 = mapping(v1, -1.0, 2.0, PI/4, -PI/2);
+    const bend2 = mapping(v2, 0.0, 1.5, 0.0, -3*PI/4);
+    let {ep1, cp1, ep2, cp2} = getBezierpt(bend1, bend2);
+
     let node = armNode;
+    let arm1_pt = makeCylinder(OPEN, node, ep1, cp1, arm1Thick, arm1Thick);
+    geoArmUprL = makeGeometry(node, nEdge, arm1_pt);
+    objArmUprL = new THREE.Mesh(geoArmUprL, arm_mat);
 
-    let arm1_pt = makeCylinder(true, node, ep1, cp1, arm1Thick, arm1Thick);
-    arm1Geo = makeGeometry(node, nEdge, arm1_pt);
-    arm1Obj = new THREE.Mesh(arm1Geo, arm_mat);
+    sPos = ep1.multiplyScalar(0.99);
+    let armj_pt = makeJoint(armThick, bend2);
+    geoArmJntL = makeGeometry(jointNode, nEdge, armj_pt);
+    objArmJntL = new THREE.Mesh(geoArmJntL, hand_mat);
 
-    let armj_pt = makeJoint(armThick);
-    armjGeo = makeGeometry(jointNode, nEdge, armj_pt);
-    armjObj = new THREE.Mesh(armjGeo, hand_mat);
-    ep1.multiplyScalar(0.99);
-    armjObj.position.set(ep1.x, ep1.y, 0);
+    let arm2_pt = makeCylinder(OPEN, node, ep2, cp2, arm1Thick, arm1Thick);
+    geoArmLwrL = makeGeometry(node, nEdge, arm2_pt);
+    objArmLwrL = new THREE.Mesh(geoArmLwrL, arm_mat);
 
-    let arm2_pt = makeCylinder(true, node, ep2, cp2, arm1Thick, arm1Thick);
-    arm2Geo = makeGeometry(node, nEdge, arm2_pt);
-    arm2Obj = new THREE.Mesh(arm2Geo, arm_mat);
-    //let jOrigin =
-    //jPos = new THREE.Vector2(0,0).add(ep1).rotateAround(ep1, armBend1+armBend2);
-    //console.log(armBend2);
-    //arm2Obj.position.set(jPos.x, jPos.y, 0);
 
-    scene.add(arm1Obj);
-    scene.add(armjObj);
-    scene.add(arm2Obj);
+
+    scene.add(objArmUprL);
+    scene.add(objArmJntL);
+    scene.add(objArmLwrL);
 
   }
 
   function arm_update(v1, v2){
 
-    endAngle = 0;
+    sRad = 0;
+    sPos = new THREE.Vector2( 0,0 );
+
+    const bend1 = mapping(v1, -1.0, 2.0, PI/4, -PI/2);
+    const bend2 = mapping(v2, 0.0, 1.5, 0.0, -3*PI/4);
+    let {ep1, cp1, ep2, cp2} = getBezierpt(bend1, bend2);
+
     let node = armNode;
-    let {ep1, cp1, ep2, cp2} = getBezierpt(v1, v2);
     let arm1_pt = makeCylinder(OPEN, node, ep1, cp1, arm1Thick, arm1Thick);
-    updateGeometry(node, nEdge, arm1_pt, arm1Geo);
-    let armj_pt = makeJoint(armThick);
-    updateGeometry(jointNode, nEdge, armj_pt, armjGeo);
+    updateGeometry(node, nEdge, arm1_pt, geoArmUprL);
+    sPos = ep1.multiplyScalar(0.99);
+    let armj_pt = makeJoint(armThick, bend2);
+    updateGeometry(jointNode, nEdge, armj_pt, geoArmJntL);
+    let arm2_pt = makeCylinder(OPEN, node, ep2, cp2, arm1Thick, arm1Thick);
+    updateGeometry(node, nEdge, arm2_pt, geoArmLwrL);
 
   }
 
 
-  function getBezierpt(v1, v2){
+  function getBezierpt(bend1, bend2){
 
-    armBend1 = mapping(v1, -1.0, 2.0, PI/4, -PI/2);
-    armBend2 = mapping(v2, 0.0, 1.5, 0.0, -3*PI/4);
-
-    let diff = Math.abs(armBend1) * -Math.PI/8;
-    let rad = armBend1 + armBend2 + diff;
-    console.log(rad);
+    let diff = Math.abs(bend1) * -Math.PI/8;
+    let rad = bend1 + bend2 + diff;
 
     //arm1
     let len = armLength;
-    const x1 = len * Math.cos(armBend1);
-    const y1 = len * Math.sin(armBend1);
+    const x1 = len * Math.cos(bend1);
+    const y1 = len * Math.sin(bend1);
     const ep1 = new THREE.Vector2( x1,y1 );
     let cp1 = new THREE.Vector2( 0,0 );
     ep1.y>0 ? cp1.y = y1/2 : cp1.x = -y1/2;
     //arm2
-    const div = jointNode-1;
-    const t = (PI - armBend2/div)/2;
-    const sub = 2 * armThick * -Math.cos(t) * div;
-    len -= sub;
+    len -= PI*armThick*(Math.abs(bend2)/180);
     const x2 = len * Math.cos(rad);
     const y2 = len * Math.sin(rad);
     const ep2 = new THREE.Vector2( x2,y2 );
@@ -195,38 +197,37 @@ function init() {
     let index = open ? node : node+1; //for CLOSE
     for(var i=0; i<index; i++){
       pt[i] = [];
-      let t = i * 1.0/(node-1);
-      if(i==node){t=1.0;} //for CLOSE
+      let t = i==node ? 1.0 : i * 1.0/(node-1);
       let x = (2 * cp.x * t * (1-t)) + (ep.x * Math.pow(t,2));
       let y = (2 * cp.y * t * (1-t)) + (ep.y * Math.pow(t,2));
-      rot = Math.atan2(y-zpos.y, x-zpos.x);
-      if(i==0){rot=endAngle;}
-      if(i==node-1){rot=armBend1;}
+      if(i==0){rot=sRad;}
+      else if(i==index-1){rot=Math.atan2(ep.y, ep.x);}
+      else{rot = Math.atan2(y-zpos.y, x-zpos.x);}
       zpos = new THREE.Vector2( x,y );
       //set points
       for(var j=0; j<nEdge; j++){
         let z = w[i] * Math.cos(j*2*Math.PI/nEdge);
         let v = new THREE.Vector2(0, h[i] * Math.sin(j*2*PI/nEdge));
         v = v.rotateAround(center, rot);
-        pt[i][j] = [v.x+x, v.y+y, z];
+        pt[i][j] = [x+v.x+sPos.x, y+v.y+sPos.y, z];
       }
     }
-    endAngle = rot;
+    sRad = rot;
     return pt;
   }
 
 
-  function makeJoint(thick){
+  function makeJoint(thick, rad){
 
     let pt = [];
     let r = thick;
-    const pos = new THREE.Vector2( 0,0 );
     let origin = new THREE.Vector2( 0,-r );
-    origin.rotateAround(pos, armBend1);
+    origin.add(sPos);
+    origin.rotateAround(sPos, sRad);
 
     for(let i=0; i<jointNode; i++){
       pt[i] = [];
-      let t = i * armBend2/(jointNode-1) + armBend1;
+      let t = i * rad/(jointNode-1) + sRad;
       let center = new THREE.Vector2( 0,r );
       center.add(origin);
       center.rotateAround(origin, t);
@@ -239,7 +240,8 @@ function init() {
       }
     }
     //update values
-    endAngle += armBend2;
+    sRad += rad;
+    sPos = new THREE.Vector2(0,r).add(origin).rotateAround(origin, sRad);
     return pt;
 }
 
