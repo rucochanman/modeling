@@ -49,8 +49,9 @@ function init() {
 
   //cylinder
   const nEdge = 10;
-  const armNode = 6;
-  const jointNode = 6;
+  const armNode = 2 * 3;
+  const jointNode = armNode;
+  const numFing = 4;
   //const handNode = armNode/2;
 
 
@@ -66,7 +67,7 @@ function init() {
   let objArmLwrL;
   let geoArmLwrL;
 
-  let objHandL;
+
 
   let jPos;
 
@@ -76,11 +77,11 @@ function init() {
       arm1Thick[i] = armThick;
   }
 
+  let handG = new THREE.Group();
+  let armG = new THREE.Group();
 
 
-  //let armG1 = new THREE.Group();
-
-  arm_init( 0.5,0.5 );
+  arm_init( 0.0,0.0 );
 
   renderer.render(scene, camera);
 
@@ -104,13 +105,42 @@ function init() {
 
     const arm_mat = new THREE.MeshPhongMaterial({color: 0x008800});
     const hand_mat = new THREE.MeshPhongMaterial({color: 0x660066});
+    const cp = new THREE.Vector2( 0,0 );
 
+
+
+
+
+
+    //hand_make
+    let node = armNode;
+    let handThick = new Array(node);
+    let fingThick = new Array(node);
+    for(let i=0; i<node; i++){
+        let t = i * 1.0/(node-1);
+        handThick[i] = armThick * Math.cos(Math.pow(t,1.5)*Math.PI/5);
+        fingThick[i] = handThick[i]/3;
+    }
+
+    const handLength = armLength/3;
+    const hp = new THREE.Vector2( handLength,0 );
+    let hand_pt = makeCylinder(CLOSE, node, hp, cp, handThick, handThick);
+    let geoHand = makeGeometry(node+1, nEdge, hand_pt);
+    let objHandL = new THREE.Mesh(geoHand, hand_mat);
+    handG.add(objHandL);
+
+    let objFingL = new Array(numFing);
+    const fp = hp.multiplyScalar(0.8);
+    let fing_pt = makeCylinder(CLOSE, node, fp, cp, fingThick, fingThick);
+    let geoFing = makeGeometry(node+1, nEdge, fing_pt);
+    for(let i=0; i<numFing; i++){
+      objFingL[i] = new THREE.Mesh(geoFing, arm_mat);
+    }
     //mapping
     const bend1 = mapping(v1, -1.0, 2.0, PI/4, -PI/2);
     const bend2 = mapping(v2, 0.0, 1.5, 0.0, -3*PI/4);
     let {ep1, cp1, ep2, cp2} = getBezierpt(bend1, bend2);
 
-    let node = armNode;
     let arm1_pt = makeCylinder(OPEN, node, ep1, cp1, arm1Thick, arm1Thick);
     geoArmUprL = makeGeometry(node, nEdge, arm1_pt);
     objArmUprL = new THREE.Mesh(geoArmUprL, arm_mat);
@@ -118,17 +148,37 @@ function init() {
     sPos = ep1.multiplyScalar(0.99);
     let armj_pt = makeJoint(armThick, bend2);
     geoArmJntL = makeGeometry(jointNode, nEdge, armj_pt);
-    objArmJntL = new THREE.Mesh(geoArmJntL, hand_mat);
+    objArmJntL = new THREE.Mesh(geoArmJntL, arm_mat);
 
     let arm2_pt = makeCylinder(OPEN, node, ep2, cp2, arm1Thick, arm1Thick);
     geoArmLwrL = makeGeometry(node, nEdge, arm2_pt);
     objArmLwrL = new THREE.Mesh(geoArmLwrL, arm_mat);
 
+    sPos.add(ep2);
+    objHandL.position.set(sPos.x, sPos.y, 0);
+    objHandL.rotation.z = sRad;
+
+    sPos.add(hp);
+    for(let i=0; i<numFing; i++){
+      let add = PI/8;
+      let angle = -PI/2 + add;
+      let z = handLength * Math.sin(angle);
+      let x = handLength * Math.cos(angle);
+      let pos = new THREE.Vector3(x, 0, z);
+      objFingL[i].rotation.y = angle;
+      objFingL[i].position.set(sPos.x + pos.x, sPos.y + pos.y, pos.z);
+      handG.add(objFingL[i]);
+    }
 
 
-    scene.add(objArmUprL);
-    scene.add(objArmJntL);
-    scene.add(objArmLwrL);
+    armG.add(objArmUprL);
+    armG.add(objArmJntL);
+    armG.add(objArmLwrL);
+    armG.add(handG);
+    scene.add(armG);
+
+    armG.rotation.x = PI/2;
+
 
   }
 
@@ -149,6 +199,12 @@ function init() {
     updateGeometry(jointNode, nEdge, armj_pt, geoArmJntL);
     let arm2_pt = makeCylinder(OPEN, node, ep2, cp2, arm1Thick, arm1Thick);
     updateGeometry(node, nEdge, arm2_pt, geoArmLwrL);
+
+    sPos.add(ep2);
+    objHandL.position.set(sPos.x, sPos.y, 0);
+    objHandL.rotation.z = sRad;
+
+
 
   }
 
@@ -194,15 +250,17 @@ function init() {
     let zpos = new THREE.Vector2( 0,0 );
     let pt = [];
     let rot = 0;
-    let index = open ? node : node+1; //for CLOSE
+    let index = open ? node : node+1;
     for(var i=0; i<index; i++){
       pt[i] = [];
       let t = i==node ? 1.0 : i * 1.0/(node-1);
       let x = (2 * cp.x * t * (1-t)) + (ep.x * Math.pow(t,2));
       let y = (2 * cp.y * t * (1-t)) + (ep.y * Math.pow(t,2));
+      //rot
       if(i==0){rot=sRad;}
       else if(i==index-1){rot=Math.atan2(ep.y, ep.x);}
       else{rot = Math.atan2(y-zpos.y, x-zpos.x);}
+      if(i==node){w[i]=0; h[i]=0; console.log("test");}
       zpos = new THREE.Vector2( x,y );
       //set points
       for(var j=0; j<nEdge; j++){
