@@ -108,34 +108,38 @@ function init() {
     const cp = new THREE.Vector2( 0,0 );
 
 
-
-
-
-
     //hand_make
     let node = armNode;
     let handThick = new Array(node);
     let fingThick = new Array(node);
     for(let i=0; i<node; i++){
         let t = i * 1.0/(node-1);
-        handThick[i] = armThick * Math.cos(Math.pow(t,1.5)*Math.PI/5);
-        fingThick[i] = handThick[i]/3;
+        handThick[i] = armThick * Math.cos(Math.pow(t,3)*Math.PI/5);
+        fingThick[i] = armThick/3 * Math.cos(Math.pow(t,2)*Math.PI/2.6);
     }
 
-    const handLength = armLength/3;
+    const handLength = armLength/5;
     const hp = new THREE.Vector2( handLength,0 );
     let hand_pt = makeCylinder(CLOSE, node, hp, cp, handThick, handThick);
     let geoHand = makeGeometry(node+1, nEdge, hand_pt);
-    let objHandL = new THREE.Mesh(geoHand, hand_mat);
-    handG.add(objHandL);
+    let objHand = new THREE.Mesh(geoHand, hand_mat);
+    handG.add(objHand);
 
-    let objFingL = new Array(numFing);
+    let objFing = new Array(numFing);
     const fp = hp.multiplyScalar(0.8);
     let fing_pt = makeCylinder(CLOSE, node, fp, cp, fingThick, fingThick);
     let geoFing = makeGeometry(node+1, nEdge, fing_pt);
     for(let i=0; i<numFing; i++){
-      objFingL[i] = new THREE.Mesh(geoFing, arm_mat);
+      objFing[i] = new THREE.Mesh(geoFing, hand_mat);
+      let angle = [-PI/6, -PI/18, PI/16, PI/5];
+      let z = handLength/1.1 * Math.sin(angle[i]);
+      let x = handLength/1.1 * Math.cos(angle[i]);
+      let pos = new THREE.Vector3(x, 0, z);
+      objFing[i].rotation.y = -angle[i];
+      objFing[i].position.set(pos.x, pos.y, pos.z);
+      handG.add(objFing[i]);
     }
+
     //mapping
     const bend1 = mapping(v1, -1.0, 2.0, PI/4, -PI/2);
     const bend2 = mapping(v2, 0.0, 1.5, 0.0, -3*PI/4);
@@ -155,20 +159,10 @@ function init() {
     objArmLwrL = new THREE.Mesh(geoArmLwrL, arm_mat);
 
     sPos.add(ep2);
-    objHandL.position.set(sPos.x, sPos.y, 0);
-    objHandL.rotation.z = sRad;
+    handG.position.set(sPos.x, sPos.y, 0);
+    handG.rotation.z = sRad;
 
-    sPos.add(hp);
-    for(let i=0; i<numFing; i++){
-      let add = PI/8;
-      let angle = -PI/2 + add;
-      let z = handLength * Math.sin(angle);
-      let x = handLength * Math.cos(angle);
-      let pos = new THREE.Vector3(x, 0, z);
-      objFingL[i].rotation.y = angle;
-      objFingL[i].position.set(sPos.x + pos.x, sPos.y + pos.y, pos.z);
-      handG.add(objFingL[i]);
-    }
+
 
 
     armG.add(objArmUprL);
@@ -177,7 +171,7 @@ function init() {
     armG.add(handG);
     scene.add(armG);
 
-    armG.rotation.x = PI/2;
+    //armG.rotation.x = PI/2;
 
 
   }
@@ -201,8 +195,8 @@ function init() {
     updateGeometry(node, nEdge, arm2_pt, geoArmLwrL);
 
     sPos.add(ep2);
-    objHandL.position.set(sPos.x, sPos.y, 0);
-    objHandL.rotation.z = sRad;
+    handG.position.set(sPos.x, sPos.y, 0);
+    handG.rotation.z = sRad;
 
 
 
@@ -213,7 +207,6 @@ function init() {
 
     let diff = Math.abs(bend1) * -Math.PI/8;
     let rad = bend1 + bend2 + diff;
-
     //arm1
     let len = armLength;
     const x1 = len * Math.cos(bend1);
@@ -222,7 +215,7 @@ function init() {
     let cp1 = new THREE.Vector2( 0,0 );
     ep1.y>0 ? cp1.y = y1/2 : cp1.x = -y1/2;
     //arm2
-    len -= PI*armThick*(Math.abs(bend2)/180);
+    len -= armThick*Math.abs(bend2);
     const x2 = len * Math.cos(rad);
     const y2 = len * Math.sin(rad);
     const ep2 = new THREE.Vector2( x2,y2 );
