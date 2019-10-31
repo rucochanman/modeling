@@ -48,7 +48,7 @@ function init() {
   let sRad = 0;
 
   //cylinder
-  const nEdge = 10;
+  const nEdge = 12;
   const armNode = 2 * 3;
   const jointNode = armNode;
   const numFing = 4;
@@ -78,20 +78,25 @@ function init() {
   }
 
   let handG = new THREE.Group();
+  let armlG = new THREE.Group();
   let armG = new THREE.Group();
 
 
-  arm_init( 0.0,0.0 );
+  arm_init( 0.5, 0.2, 7*PI/8, 0 );
 
   renderer.render(scene, camera);
 
   let count = 0;
+  let angle = 0;
+  let bend = 0;
   function animate(){
-        count += 0.01;
-        if(count>1){
-          count = 0;
+        count += 1;
+        if(count%100==0){
+
+          angle = count*PI/64;
+          console.log("hit");
         }
-        arm_update( count, count );
+        arm_update( 0.5, 0.2, PI/32, PI/64);
         requestAnimationFrame( animate );
         renderer.render( scene, camera );
   }
@@ -101,14 +106,13 @@ function init() {
 
 
 
-  function arm_init(v1, v2){
+  function arm_init(v1, v2, rot1, rot2){
 
     const arm_mat = new THREE.MeshPhongMaterial({color: 0x008800});
     const hand_mat = new THREE.MeshPhongMaterial({color: 0x660066});
     const cp = new THREE.Vector2( 0,0 );
 
-
-    //hand_make
+    //make_hand
     let node = armNode;
     let handThick = new Array(node);
     let fingThick = new Array(node);
@@ -117,14 +121,14 @@ function init() {
         handThick[i] = armThick * Math.cos(Math.pow(t,3)*Math.PI/5);
         fingThick[i] = armThick/3 * Math.cos(Math.pow(t,2)*Math.PI/2.6);
     }
-
+    //make_palm
     const handLength = armLength/5;
     const hp = new THREE.Vector2( handLength,0 );
     let hand_pt = makeCylinder(CLOSE, node, hp, cp, handThick, handThick);
     let geoHand = makeGeometry(node+1, nEdge, hand_pt);
     let objHand = new THREE.Mesh(geoHand, hand_mat);
     handG.add(objHand);
-
+    //make_fingers
     let objFing = new Array(numFing);
     const fp = hp.multiplyScalar(0.8);
     let fing_pt = makeCylinder(CLOSE, node, fp, cp, fingThick, fingThick);
@@ -144,39 +148,41 @@ function init() {
     const bend1 = mapping(v1, -1.0, 2.0, PI/4, -PI/2);
     const bend2 = mapping(v2, 0.0, 1.5, 0.0, -3*PI/4);
     let {ep1, cp1, ep2, cp2} = getBezierpt(bend1, bend2);
-
-    let arm1_pt = makeCylinder(OPEN, node, ep1, cp1, arm1Thick, arm1Thick);
-    geoArmUprL = makeGeometry(node, nEdge, arm1_pt);
+    //upper_arm
+    let armu_pt = makeCylinder(OPEN, node, ep1, cp1, arm1Thick, arm1Thick);
+    geoArmUprL = makeGeometry(node, nEdge, armu_pt);
     objArmUprL = new THREE.Mesh(geoArmUprL, arm_mat);
-
+    //joint
     sPos = ep1.multiplyScalar(0.99);
     let armj_pt = makeJoint(armThick, bend2);
     geoArmJntL = makeGeometry(jointNode, nEdge, armj_pt);
     objArmJntL = new THREE.Mesh(geoArmJntL, arm_mat);
-
-    let arm2_pt = makeCylinder(OPEN, node, ep2, cp2, arm1Thick, arm1Thick);
-    geoArmLwrL = makeGeometry(node, nEdge, arm2_pt);
+    //lower_arm
+    let arml_pt = makeCylinder(OPEN, node, ep2, cp2, arm1Thick, arm1Thick);
+    geoArmLwrL = makeGeometry(node, nEdge, arml_pt);
     objArmLwrL = new THREE.Mesh(geoArmLwrL, arm_mat);
-
+    //hand_pos
     sPos.add(ep2);
     handG.position.set(sPos.x, sPos.y, 0);
     handG.rotation.z = sRad;
-
-
-
-
+    //Grouping
+    armlG.add(objArmJntL);
+    armlG.add(objArmLwrL);
+    armlG.add(handG);
     armG.add(objArmUprL);
-    armG.add(objArmJntL);
-    armG.add(objArmLwrL);
-    armG.add(handG);
+    armG.add(armlG);
+    //rotation
+    let axis = new THREE.Vector3(Math.cos(bend1),Math.sin(bend1),0).normalize();
+    let angle = rot2;
+    let q = new THREE.Quaternion();
+    q.setFromAxisAngle(axis,angle);
+    armlG.applyQuaternion(q);
+    armG.rotation.x = rot1;
+
     scene.add(armG);
-
-    //armG.rotation.x = PI/2;
-
-
   }
 
-  function arm_update(v1, v2){
+  function arm_update(v1, v2, rot1, rot2){
 
     sRad = 0;
     sPos = new THREE.Vector2( 0,0 );
@@ -186,20 +192,30 @@ function init() {
     let {ep1, cp1, ep2, cp2} = getBezierpt(bend1, bend2);
 
     let node = armNode;
-    let arm1_pt = makeCylinder(OPEN, node, ep1, cp1, arm1Thick, arm1Thick);
-    updateGeometry(node, nEdge, arm1_pt, geoArmUprL);
+    //arm_geoUpdate
+    let armu_pt = makeCylinder(OPEN, node, ep1, cp1, arm1Thick, arm1Thick);
+    updateGeometry(node, nEdge, armu_pt, geoArmUprL);
     sPos = ep1.multiplyScalar(0.99);
     let armj_pt = makeJoint(armThick, bend2);
     updateGeometry(jointNode, nEdge, armj_pt, geoArmJntL);
-    let arm2_pt = makeCylinder(OPEN, node, ep2, cp2, arm1Thick, arm1Thick);
-    updateGeometry(node, nEdge, arm2_pt, geoArmLwrL);
-
+    let arml_pt = makeCylinder(OPEN, node, ep2, cp2, arm1Thick, arm1Thick);
+    updateGeometry(node, nEdge, arml_pt, geoArmLwrL);
+    ///hand_geoUpdate
     sPos.add(ep2);
     handG.position.set(sPos.x, sPos.y, 0);
     handG.rotation.z = sRad;
 
-
-
+    //rotation
+    let axis1 = new THREE.Vector3(1,0,0);
+    let angle1 = rot1;
+    let axis2 = new THREE.Vector3(Math.cos(bend1),Math.sin(bend1),0).normalize();
+    let angle2 = rot2;
+    let q1 = new THREE.Quaternion();
+    let q2 = new THREE.Quaternion();
+    q1.setFromAxisAngle(axis1,angle1);
+    q2.setFromAxisAngle(axis2,angle2);
+    armlG.applyQuaternion(q2);
+    armG.applyQuaternion(q1);
   }
 
 
