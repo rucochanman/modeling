@@ -21,7 +21,7 @@ function init() {
 
   // カメラを作成
   let camera = new THREE.PerspectiveCamera(45, width / height);
-  camera.position.set(0, 0, 80);
+  camera.position.set(0, 0, 300);
   camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   //ライト
@@ -32,7 +32,7 @@ function init() {
   const envlight = new THREE.AmbientLight(0xFFFFFF, 0.4);
   scene.add(envlight);
 
-  //animation
+
 
 
 /////////////////////////////////////////////////////////////////
@@ -48,14 +48,16 @@ function init() {
   let sRad = 0;
 
   //cylinder
-  const nEdge = 12;
-  const armNode = 2 * 3;
+  const reso = 6;
+  const nEdge = 2 * reso;
+  const armNode = 2 * reso;
   const jointNode = armNode;
   const numFing = 4;
+  const wScale = 140;
   //const handNode = armNode/2;
 
 
-
+  //length
   const armLength = 20;
   const armThick = 5; //p
 
@@ -67,22 +69,27 @@ function init() {
   let objArmLwrL;
   let geoArmLwrL;
 
+  let objHead;
 
-
-  let jPos;
-
-  //thick
+  //arm_thick
   let arm1Thick = new Array(armNode);
   for(let i=0; i<armNode; i++){
       arm1Thick[i] = armThick;
   }
 
+  //groups
   let handG = new THREE.Group();
   let armlG = new THREE.Group();
   let armG = new THREE.Group();
 
+  let headG = new THREE.Group();
 
-  arm_init( 0.5, 0.2, 7*PI/8, 0 );
+
+  //init
+  //arm_init( 0.5, 0.2, 7*PI/8, 0 );
+
+  headInit();
+
 
   renderer.render(scene, camera);
 
@@ -92,9 +99,7 @@ function init() {
   function animate(){
         count += 1;
         if(count%100==0){
-
           angle = count*PI/64;
-          console.log("hit");
         }
         arm_update( 0.5, 0.2, PI/32, PI/64);
         requestAnimationFrame( animate );
@@ -102,6 +107,177 @@ function init() {
   }
   //animate();
 
+  function headInit(){
+
+    makeHead();
+    //headG.rotation.y = PI/2;
+    makeEye();
+    makeEyelash();
+    makeMouth();
+
+
+  }
+
+  function makeEye(){
+
+    const eye_mat = new THREE.MeshPhongMaterial({color: 0x444444});
+    const node = reso;
+    const edge = 2 * reso;
+    let pt = [];
+    const size = wScale/5.8;
+    const posL = headPtCal(0.5, 0.16);
+    const posR = headPtCal(0.5, -0.16);
+    let sPosL = new THREE.Vector3(posL[0], posL[1], posL[2]);
+    let sPosR = new THREE.Vector3(posR[0], posR[1], posR[2]);
+    sPosL.z *= 0.91;
+    sPosR.z *= 0.91;
+    let z = 0;
+    for(let i=0;i<node;i++){
+      pt[i] = [];
+      let r = (node-1-i) * size / node;
+      let thick = Math.pow((node-i)*1.0/node, 4) * 8;
+      z += thick;
+      for(let j=0;j<edge;j++){
+        let x = r * Math.cos( j*2*PI/(edge-1) );
+        let y = r * Math.sin( j*2*PI/(edge-1) );
+        if(i==0){z = thick - Math.abs( r/8 * Math.cos( j*2*PI/(edge-1) ) );}
+        pt[i][j] = [x,y,z];
+      }
+    }
+    let geo = makeGeometry(node, edge, pt);
+    let objL = new THREE.Mesh(geo, eye_mat);
+    let objR = objL.clone();
+    objL.position.set(sPosL.x, sPosL.y, sPosL.z);
+    objR.position.set(sPosR.x, sPosR.y, sPosR.z);
+    objL.rotation.x = -PI/12;
+    objR.rotation.x = -PI/12;
+    objL.rotation.y = PI/12;
+    objR.rotation.y = -PI/12;
+    headG.add(objL);
+    headG.add(objR);
+  }
+
+  function makeHead(){
+    //head_pt
+    const headEdge = 16;
+    const headNode = 16;
+    const head_mat = new THREE.MeshPhongMaterial({color: 0xff8888});
+    let pt = [];
+    const m = headEdge/2.0;
+    for(let i=0; i<headNode; i++){
+      let ndiv = i*1.0/(headNode-1);
+      pt[i] = [];
+      for(let j=0; j<headEdge; j++){
+        let ediv = ( (2*m-j) - 2*( m-(j%m) ) ) / m;
+        pt[i][j] = headPtCal(ndiv, ediv);
+      }
+    }
+    let geoHead = makeGeometry(headNode, headEdge, pt);
+    objHead = new THREE.Mesh(geoHead, head_mat);
+    objHead.rotation.y = 0;
+    headG.add(objHead);
+    scene.add(headG);
+  }
+
+
+  function makeMouth(){
+
+    const w = 0.02;
+    const h = w*0.9;
+    const edge = Math.round(wScale/5);
+    let geoL = new THREE.Geometry();
+    let geoR = new THREE.Geometry();
+
+    for(let i=0;i<edge;i++){
+      let x = w * Math.cos(i * PI/(edge-1)) + w;
+      let y = h * Math.sin(i * PI/(edge-1)) + 0.69;
+      let pt = headPtCal(y,x);
+      geoL.vertices.push(new THREE.Vector3( pt[0], pt[1], pt[2]) );
+      geoR.vertices.push(new THREE.Vector3( -pt[0], pt[1], pt[2]) );
+    }
+
+    let material = new THREE.LineBasicMaterial({color: 0x000000});
+    material.linewidth = 4;
+    let lineL = new THREE.Line( geoL, material );
+    let lineR = new THREE.Line( geoR, material );
+
+    //sceneにlineを追加
+    headG.add( lineL );
+    headG.add( lineR );
+
+  }
+
+  function makeEyelash(){
+
+    const r = wScale/20;
+    let posL = headPtCal(0.36, 0.11);
+    let posR = headPtCal(0.36, -0.22);
+    let y = r * Math.sin(PI/4);
+    let x = r * Math.cos(PI/4);
+    let geoL = new THREE.Geometry();
+    let geoR = new THREE.Geometry();
+
+    geoL.vertices.push(new THREE.Vector3( posL[0], posL[1], posL[2]) );
+    geoL.vertices.push(new THREE.Vector3( posL[0]-x, posL[1]+y, posL[2]) );
+    geoR.vertices.push(new THREE.Vector3( posR[0], posR[1], posR[2]) );
+    geoR.vertices.push(new THREE.Vector3( posR[0]-x, posR[1]+y, posR[2]) );
+
+    let material = new THREE.LineBasicMaterial({color: 0x000000});
+    material.linewidth = 4;
+    let lineL = new THREE.Line( geoL, material );
+    let lineR = new THREE.Line( geoR, material );
+    headG.add( lineL );
+    headG.add( lineR );
+
+
+  }
+
+
+
+  function headPtCal(ndiv, ediv){
+    //variables
+    if(ndiv==0||ndiv==1){ediv=0;}
+    const pidiv = Math.abs(ediv);
+    const amp1 = 0.13;
+    const amp2 = 0.1;
+    const ffreq = 3.0;
+    const bfreq1 = 0.4;
+    const bfreq2 = 0.9;
+    const fphase1 = 1.4;
+    const fphase2 = -0.35;
+    const bphase1 = 2.0;
+    const bphase2 = -1.8;
+    const c = 0.41;
+    //cal step
+    const cp = 0.4;
+    const x1 = 3 * cp * ndiv * Math.pow((1-ndiv), 2);
+    const x2 = 3 * cp * Math.pow(ndiv, 2) * (1-ndiv);
+    const x3 = Math.pow(ndiv, 3);
+    const step = x1 + x2 + x3;
+    //params
+    const amp = (1-ndiv)*amp1 + ndiv*amp2;
+    const bfreq = (1-ndiv)*bfreq1 + ndiv*bfreq2;
+    const fphase = (1-step)*fphase1 + step*fphase2;
+    const bphase = (1-step)*bphase1 + step*bphase2;
+    //synthesis
+    const front = amp * Math.sin(step*ffreq*PI+fphase) + c;
+    const back = amp * Math.sin(step*bfreq*PI+bphase) + c;
+    const p_temp = Math.pow(pidiv,1.3);
+    let p = p_temp>0.45 ? Math.pow(1.0-p_temp, 3) + p_temp : p_temp;
+    let scale = p_temp>0.45
+      ? 0.15*Math.sin(1.8*(pidiv-0.5)*PI+PI/8)+1.12
+      : 0.14 * Math.sin(1.8*pidiv*PI)+1.245;
+    const synth = (1-p)*front + p*back;
+    //set points
+    const thita = step * PI;
+    const phi = ediv * PI;
+    const size = wScale;
+    const z = size * synth * Math.sin(thita) * Math.cos(phi) * scale;
+    const x = size * synth * Math.sin(thita) * Math.sin(phi) * scale;
+    const y = size * synth * Math.cos(thita);
+    let pt = [x,y,z];
+    return pt;
+  }
 
 
 
@@ -181,6 +357,8 @@ function init() {
 
     scene.add(armG);
   }
+
+
 
   function arm_update(v1, v2, rot1, rot2){
 
