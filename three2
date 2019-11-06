@@ -110,10 +110,13 @@ function init() {
   function headInit(){
 
     makeHead();
-    //headG.rotation.y = PI/2;
     makeEye();
     makeEyelash();
     makeMouth();
+    makeHilight();
+    makeEyebrow();
+    headG.rotation.y = PI/4;
+
 
 
   }
@@ -161,7 +164,7 @@ function init() {
     //head_pt
     const headEdge = 16;
     const headNode = 16;
-    const head_mat = new THREE.MeshPhongMaterial({color: 0xff8888});
+    const head_mat = new THREE.MeshPhongMaterial({color: 0xffffff});
     let pt = [];
     const m = headEdge/2.0;
     for(let i=0; i<headNode; i++){
@@ -210,7 +213,7 @@ function init() {
   function makeEyelash(){
 
     const r = wScale/20;
-    let posL = headPtCal(0.36, 0.11);
+    let posL = headPtCal(0.36, 0.12);
     let posR = headPtCal(0.36, -0.22);
     let y = r * Math.sin(PI/4);
     let x = r * Math.cos(PI/4);
@@ -229,10 +232,64 @@ function init() {
     headG.add( lineL );
     headG.add( lineR );
 
+  }
+
+  function makeHilight(){
+
+    const mat = new THREE.MeshPhongMaterial({color: 0xffffff});
+    const edge = 12;
+    const node = 2;
+
+    const r1 = [wScale/18.5, 0];
+    const r2 = [wScale/37, 0];
+    const xang = [-PI/10, -PI/10, -PI/16, -PI/16];
+    const yang = [PI/20, -PI/10, PI/10, -PI/20];
+    const ydiv = [0.43, 0.43, 0.55, 0.55];
+    const xdiv = [0.15, -0.2, 0.2, -0.12];
+    const zmul = [1.15, 1.18, 1.14, 1.14];
+
+    const ep = new THREE.Vector2( 0,0 );
+    const pt1 = makeCylinder(OPEN, node, ep, ep, r1, r1);
+    const pt2 = makeCylinder(OPEN, node, ep, ep, r2, r2);
+    const pt = [pt1, pt1, pt2, pt2];
+
+    for(let i=0; i<4; i++){
+      let geo = makeGeometry(node, edge, pt[i]);
+      let obj = new THREE.Mesh(geo, mat);
+      let pos = headPtCal(ydiv[i], xdiv[i]);
+      pos[2] *= zmul[i];
+      obj.position.set(pos[0], pos[1], pos[2]);
+      obj.rotation.x = xang[i];
+      obj.rotation.y = PI/2 + yang[i];
+      headG.add(obj);
+    }
 
   }
 
 
+
+  function makeEyebrow(){
+    let pt1L = headPtCal(0.22, -0.14);
+    let pt2L = headPtCal(0.235, -0.20);
+    let pt1R = headPtCal(0.22, 0.14);
+    let pt2R = headPtCal(0.235, 0.20);
+
+    let geoL = new THREE.Geometry();
+    let geoR = new THREE.Geometry();
+
+    geoL.vertices.push(new THREE.Vector3( pt1L[0], pt1L[1], pt1L[2]) );
+    geoL.vertices.push(new THREE.Vector3( pt2L[0], pt2L[1], pt2L[2]) );
+    geoR.vertices.push(new THREE.Vector3( pt1R[0], pt1R[1], pt1R[2]) );
+    geoR.vertices.push(new THREE.Vector3( pt2R[0], pt2R[1], pt2R[2]) );
+
+    let material = new THREE.LineBasicMaterial({color: 0x000000});
+    material.linewidth = 4;
+    let lineL = new THREE.Line( geoL, material );
+    let lineR = new THREE.Line( geoR, material );
+    headG.add( lineL );
+    headG.add( lineR );
+
+  }
 
   function headPtCal(ndiv, ediv){
     //variables
@@ -265,7 +322,7 @@ function init() {
     const p_temp = Math.pow(pidiv,1.3);
     let p = p_temp>0.45 ? Math.pow(1.0-p_temp, 3) + p_temp : p_temp;
     let scale = p_temp>0.45
-      ? 0.15*Math.sin(1.8*(pidiv-0.5)*PI+PI/8)+1.12
+      ? 0.15 * Math.sin(1.8*(pidiv-0.5)*PI+PI/8)+1.12
       : 0.14 * Math.sin(1.8*pidiv*PI)+1.245;
     const synth = (1-p)*front + p*back;
     //set points
@@ -447,7 +504,7 @@ function init() {
       if(i==0){rot=sRad;}
       else if(i==index-1){rot=Math.atan2(ep.y, ep.x);}
       else{rot = Math.atan2(y-zpos.y, x-zpos.x);}
-      if(i==node){w[i]=0; h[i]=0; console.log("test");}
+      if(i==node){w[i]=0; h[i]=0;}
       zpos = new THREE.Vector2( x,y );
       //set points
       for(var j=0; j<nEdge; j++){
