@@ -26,10 +26,18 @@ function init() {
 
   //ライト
   const light = new THREE.PointLight( 0xffffee );
-  light.position.set( -75, -30, -35 );
-  scene.add( light );
+  light.position.set( 0, 100, 180 );
+  //scene.add( light );
+  const light2 = new THREE.PointLight( 0xffffee );
+  light2.position.set( -15, 10, -10 );
+  //scene.add( light2 );
 
-  const envlight = new THREE.AmbientLight(0xFFFFFF, 0.4);
+  const light3 = new THREE.DirectionalLight( 0xffffee );
+  light3.position.set( 0, 0, 10 );
+  scene.add( light3 );
+
+
+  const envlight = new THREE.AmbientLight(0xFFFFFF, 0.7);
   scene.add(envlight);
 
 
@@ -59,8 +67,7 @@ function init() {
   //Color
   const skinCol = new THREE.Color(0xe0a080);
   const hairCol = new THREE.Color(0x5e270e);
-  //const eyeCol = new THREE.Color(0x30180f);
-  const eyeCol = new THREE.Color(0xff0000);
+  const eyeCol = new THREE.Color(0x30180f);
   const highCol = new THREE.Color(0xffffff);
 
   //material
@@ -69,6 +76,22 @@ function init() {
     side:THREE.DoubleSide
   });
 
+
+  let cUniforms =
+    THREE.UniformsUtils.merge( [
+      THREE.UniformsLib['lights'],
+      {
+        'uColor': { value: null }
+      },
+    ] );
+
+  let cMat = new THREE.ShaderMaterial({
+    side:THREE.DoubleSide,
+    uniforms: cUniforms,
+    vertexShader: document.getElementById('vs2').textContent,
+    fragmentShader: document.getElementById('fs2').textContent,
+    lights: true
+  });
 
   //length
   const armLength = 20;
@@ -131,8 +154,12 @@ function init() {
 
   function headInit(){
 
-    //makeHead();
-    makeEye4();
+
+    makeS();
+    makeHead();
+    makeEye();
+    makeEar();
+    //headG.rotation.y = PI/4;
 
     //makeLines();
     //makeEar();
@@ -153,6 +180,22 @@ function init() {
 
 
 
+function makeS(){
+
+  let geometry = new THREE.SphereGeometry( 50, 32, 32 );
+  const mat = new THREE.MeshPhongMaterial({
+    color: 0x994466,
+    //side:THREE.DoubleSide
+  });
+
+  let sphere = new THREE.Mesh( geometry, mat );
+  scene.add( sphere );
+  sphere.position.x = 150;
+  sphere.position.z = 0;
+
+}
+
+
 
 function makeHead(){
   //const
@@ -166,27 +209,28 @@ function makeHead(){
   let uniforms =
     THREE.UniformsUtils.merge( [
       THREE.UniformsLib['lights'],
+      //THREE.UniformsLib['ambient'],
       {
         'uTexure': { value: null },
         'uColor1': { value: skinCol },
         'uColor2': { value: hairCol }
       },
     ] );
-    uniforms.uTexure.value = texture;
+  uniforms.uTexure.value = texture;
 
-  let mat = new THREE.ShaderMaterial({
-      side: THREE.DoubleSide,
-      uniforms: uniforms,
-      vertexShader: document.getElementById('vs').textContent,
-      fragmentShader: document.getElementById('fs').textContent,
-      lights: true
+  let shdrMat = new THREE.ShaderMaterial({
+    side:THREE.DoubleSide,
+    uniforms: uniforms,
+    vertexShader: document.getElementById('vs').textContent,
+    fragmentShader: document.getElementById('fs').textContent,
+    lights: true
   });
 
   //geometry
   let pt = [];
   const m = edge/2.0;
   for(let i=0; i<node; i++){
-    let ndiv = i*1.0/(node-1);
+    let ndiv = 1 - i*1.0/(node-1);
     pt[i] = [];
     for(let j=0; j<edge; j++){
       let ediv = ( (2*m-j) - 2*(m-(j%m) ) ) / m;
@@ -194,14 +238,14 @@ function makeHead(){
     }
     pt[i][edge] = headPtCal(ndiv, 0);
   }
-
   let geo = makeGeometry(node, edge+1, pt);
+
 
   //uvmap
   let uvmap = [];
   for(let i=0; i<node; i++){
     uvmap[i] = [];
-    let y = 1.0 - (i*1.0/node);
+    let y = i*1.0/node;
     for(let j=0; j<edge+1; j++){
       let x = 1.0 - (j*1.0/edge);
       uvmap[i][j] = [x, y];
@@ -215,242 +259,12 @@ function makeHead(){
   geo_merg.mergeVertices();
   geo_merg.computeVertexNormals(true);
 
-  let obj = new THREE.Mesh(geo_merg, mat);
+  let obj = new THREE.Mesh(geo_merg, shdrMat);
   headG.add(obj);
-  headG.rotation.y = PI/5;
   scene.add(headG);
 
-}
-
-
-function makeEye4(){
-  //const
-  const edge = reso * 3;
-  const node = reso * 3;
-  const size = 60;
-
-  //material
-  const loader = new THREE.TextureLoader();// テクスチャローダーを作成
-  const texture = loader.load('img/eye.png');// テクスチャ読み込み
-
-  let uniforms =
-    THREE.UniformsUtils.merge( [
-      THREE.UniformsLib['lights'],
-      {
-        'uTexure': { value: null },
-        'uColor1': { value: skinCol },
-        'uColor2': { value: hairCol }
-      },
-    ] );
-    uniforms.uTexure.value = texture;
-
-  let mat = new THREE.ShaderMaterial({
-      side: THREE.DoubleSide,
-      uniforms: uniforms,
-      vertexShader: document.getElementById('vs').textContent,
-      fragmentShader: document.getElementById('fs').textContent,
-      lights: true
-  });
-
-  //geometry
-  let pt = [];
-  let z = 0;
-  for(let i=0;i<node;i++){
-    pt[i] = [];
-    let r = (node-1-i) * size / node;
-    let thick = Math.pow((node-i)*1.0/node, 4) * 8;
-    z += thick;
-    for(let j=0;j<edge;j++){
-      let x = r * Math.cos( j*2*PI/(edge-1) );
-      let y = r * Math.sin( j*2*PI/(edge-1) );
-      if(i==0){z = thick - Math.abs( r/8 * Math.cos( j*2*PI/(edge-1) ) );}
-      pt[i][j] = [x,y,z];
-    }
-    pt[i][edge] = [0,0,0];
-  }
-  let geo = makeGeometry(node, edge+1, pt);
-
-  //uvmap
-  let uvmap = [];
-  for(let i=0; i<node; i++){
-    uvmap[i] = [];
-    let y = 1.0 - (i*1.0/node);
-    for(let j=0; j<edge+1; j++){
-      let x = 1.0 - (j*1.0/edge);
-      uvmap[i][j] = [x, y];
-    }
-  }
-  let uvs = setUvs(node, edge+1, uvmap);
-  geo.addAttribute('uv', new THREE.BufferAttribute(uvs, 2) );
-
-  //scene_add
-  let geo_merg = new THREE.Geometry().fromBufferGeometry( geo );
-  geo_merg.mergeVertices();
-  geo_merg.computeVertexNormals(true);
-
-  let obj = new THREE.Mesh(geo_merg, mat);
-  scene.add(obj);
 
 }
-
-
-
-
-function makeEye3(){
-
-  const node = reso;
-  const edge = 3 * reso;
-  const size = wScale/5.8;
-
-  //material
-  const loader = new THREE.TextureLoader();// テクスチャローダーを作成
-  const texture = loader.load('img/hair.png');// テクスチャ読み込み
-
-  let uniforms =
-    THREE.UniformsUtils.merge( [
-      THREE.UniformsLib['lights'],
-      {
-        'uTexure': { value: null },
-        'uColor1': { value: skinCol },
-        'uColor2': { value: hairCol }
-      },
-    ] );
-    uniforms.uTexure.value = texture;
-
-  let mat = new THREE.ShaderMaterial({
-      side: THREE.DoubleSide,
-      uniforms: uniforms,
-      vertexShader: document.getElementById('vs').textContent,
-      fragmentShader: document.getElementById('fs').textContent,
-      lights: true
-  });
-
-  //geometry
-
-
-  let pt = [];
-  let z = 0;
-  for(let i=0;i<node;i++){
-    pt[i] = [];
-    let r = (node-1-i) * size / node;
-    let thick = Math.pow((node-i)*1.0/node, 4) * 8;
-    z += thick;
-    for(let j=0;j<edge;j++){
-      let x = r * Math.cos( j*2*PI/(edge-1) );
-      let y = r * Math.sin( j*2*PI/(edge-1) );
-      if(i==0){z = thick - Math.abs( r/8 * Math.cos( j*2*PI/(edge-1) ) );}
-      pt[i][j] = [x,y,z];
-    }
-  }
-  let geo = makeGeometry(node, edge, pt);
-
-  //uvmap
-  let uvmap = [];
-  for(let i=0; i<node; i++){
-    uvmap[i] = [];
-    let y = 1.0 - (i*1.0/node);
-    for(let j=0; j<edge; j++){
-      let x = 1.0 - (j*1.0/edge);
-      uvmap[i][j] = [x, y];
-    }
-  }
-  let uvs = setUvs(node, edge, uvmap);
-  geo.addAttribute('uv', new THREE.BufferAttribute(uvs, 2) );
-
-  //scene_add
-  let geo_merg = new THREE.Geometry().fromBufferGeometry( geo );
-  geo_merg.mergeVertices();
-  geo_merg.computeVertexNormals(true);
-
-  let obj = new THREE.Mesh(geo_merg, mat);
-  scene.add(obj);
-
-}
-
-
-
-
-function makeEye2(){
-
-  //const
-  const node = reso;
-  const edge = 3 * reso;
-  const size = wScale/5.8;
-
-  //material
-  const loader = new THREE.TextureLoader();// テクスチャローダーを作成
-  const texture = loader.load('img/hair.png');// テクスチャ読み込み
-
-  let uniforms2 =
-    THREE.UniformsUtils.merge( [
-      THREE.UniformsLib['lights'],
-      {
-        'uTexure': { value: null },
-        'uColor1': { value: highCol },
-        'uColor2': { value: eyeCol }
-      },
-    ] );
-    uniforms2.uTexure.value = texture;
-
-  let mat = new THREE.ShaderMaterial({
-      side: THREE.DoubleSide,
-      uniforms: uniforms2,
-      vertexShader: document.getElementById('vs').textContent,
-      fragmentShader: document.getElementById('fs').textContent,
-      lights: true
-  });
-
-  //geometry
-  let pt = [];
-  let z = 0;
-  for(let i=0;i<node;i++){
-    pt[i] = [];
-    let r = (node-1-i) * size / node;
-    let thick = Math.pow((node-i)*1.0/node, 4) * 8;
-    z += thick;
-    for(let j=0;j<edge;j++){
-      let x = r * Math.cos( j*2*PI/(edge-1) );
-      let y = r * Math.sin( j*2*PI/(edge-1) );
-      if(i==0){z = thick - Math.abs( r/8 * Math.cos( j*2*PI/(edge-1) ) );}
-      pt[i][j] = [x,y,z];
-    }
-  }
-  let geo = makeGeometry(node, edge, pt);
-
-  //uvmap
-  let uvmap = [];
-  for(let i=0; i<node; i++){
-    uvmap[i] = [];
-    let y = 1.0 - (i*1.0/node);
-    for(let j=0; j<edge; j++){
-      let x = 1.0 - (j*1.0/edge);
-      uvmap[i][j] = [x, y];
-    }
-  }
-  let uvs = setUvs(node, edge, uvmap);
-  geo.addAttribute('uv', new THREE.BufferAttribute(uvs, 2) );
-
-  //posision
-  const posL = headPtCal(0.5, 0.16);
-  const posR = headPtCal(0.5, -0.16);
-  let sPosL = new THREE.Vector3(posL[0], posL[1], posL[2]);
-  let sPosR = new THREE.Vector3(posR[0], posR[1], posR[2]);
-  sPosL.z *= 0.91;
-  sPosR.z *= 0.91;
-
-  //Object
-  let geo_merg = new THREE.Geometry().fromBufferGeometry( geo );
-  geo_merg.mergeVertices();
-  geo_merg.computeVertexNormals(true);
-  let obj = new THREE.Mesh(geo_merg, mat);
-//  let objR = objL.clone();
-  obj.position.set(20,20,50);
-  scene.add(obj);
-  //headG.add(obj);
-//  headG.add(objR);
-}
-
-
 
 
 
@@ -465,23 +279,24 @@ function makeEye(){
   const loader = new THREE.TextureLoader();// テクスチャローダーを作成
   const texture = loader.load('img/eye.png');// テクスチャ読み込み
 
-  let uniforms = {
-    'uTex': {
-      value: texture
-    },
-    'uColor1': {
-      value: highCol
-    },
-    'uColor2': {
-      value: eyeCol
-    }
-  };
+  let uniforms =
+    THREE.UniformsUtils.merge( [
+      THREE.UniformsLib['lights'],
+      //THREE.UniformsLib['ambient'],
+      {
+        'uTexure': { value: null },
+        'uColor1': { value: highCol },
+        'uColor2': { value: eyeCol }
+      },
+    ] );
+  uniforms.uTexure.value = texture;
 
-  let mat = new THREE.ShaderMaterial({
-      side:THREE.DoubleSide,
-      uniforms: uniforms,
-      vertexShader: document.getElementById('vs').textContent,
-      fragmentShader: document.getElementById('fs').textContent
+  let shdrMat = new THREE.ShaderMaterial({
+    //side:THREE.DoubleSide,
+    uniforms: uniforms,
+    vertexShader: document.getElementById('vs').textContent,
+    fragmentShader: document.getElementById('fs').textContent,
+    lights: true
   });
 
   //geometry
@@ -490,7 +305,7 @@ function makeEye(){
   for(let i=0;i<node;i++){
     pt[i] = [];
     let r = (node-1-i) * size / node;
-    let thick = Math.pow((node-i)*1.0/node, 4) * 8;
+    let thick = Math.pow((node-i)*1.0/node, 4) * 8; //ruco_size
     z += thick;
     for(let j=0;j<edge;j++){
       let x = r * Math.cos( j*2*PI/(edge-1) );
@@ -500,7 +315,6 @@ function makeEye(){
     }
   }
   let geo = makeGeometry(node, edge, pt);
-
 
   //uvmap
   let uvmap = [];
@@ -515,6 +329,10 @@ function makeEye(){
   let uvs = setUvs(node, edge, uvmap);
   geo.addAttribute('uv', new THREE.BufferAttribute(uvs, 2) );
 
+  let geo_merg = new THREE.Geometry().fromBufferGeometry( geo );
+  geo_merg.mergeVertices();
+  geo_merg.computeVertexNormals(true);
+
   //object
   const posL = headPtCal(0.5, 0.16);
   const posR = headPtCal(0.5, -0.16);
@@ -522,7 +340,7 @@ function makeEye(){
   let sPosR = new THREE.Vector3(posR[0], posR[1], posR[2]);
   sPosL.z *= 0.91;
   sPosR.z *= 0.91;
-  let objL = new THREE.Mesh(geo, mat);
+  let objL = new THREE.Mesh(geo_merg, shdrMat);
   let objR = objL.clone();
   objL.position.set(sPosL.x, sPosL.y, sPosL.z);
   objL.rotation.x = -PI/12;
@@ -542,6 +360,7 @@ function makeEar(){
 
   //radius
   const s = wScale/2;
+  cUniforms.uColor.value = new THREE.Color(0xff0000);
 
   const mat = new THREE.MeshPhongMaterial({
     color: 0xee4466,
@@ -561,13 +380,13 @@ function makeEar(){
 
   let pt = makeCylinder(OPEN, node, ep, cp, w1, w2);
   let geo = makeGeometry(node, edge, pt);
-  let obj = new THREE.Mesh(geo, mat);
+  let obj = new THREE.Mesh(geo, cMat);
 
   let pos = headPtCal(0.5, 0.5);
-  //let vec = new THREE.Vector3(pos.x, pos.y, pos.z);
+
   obj.rotation.y = PI/2;
   obj.position.set(pos[0],pos[1],pos[2]);
-  scene.add(obj);
+  headG.add(obj);
 
 
 }
