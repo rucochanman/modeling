@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/105/three.min.js"></script>
+    <script src="three.js"></script>
+  </head>
+  <body>
+    <canvas id="myCanvas"></canvas>
+    <div id="webgl"></div>
+    <script id="vs" type="x-shader/x-vertex">
+        #include <common>
+        #include <bsdfs>
+        #include <lights_pars_begin>
+
+        varying vec2 vUv;
+        varying vec4 fragColor;
+
+        void main() {
+
+            vec4 tempFragColor = vec4(0.0, 0.0, 0.0, 0.0);
+
+            for (int i = 0; i < NUM_DIR_LIGHTS; i++) {
+              vec4 pos = modelViewMatrix * vec4(position, 1.0);
+              vec4 vertexToLight = normalize(vec4(directionalLights[0].direction, 1.0));
+              vec4 col = vec4(directionalLights[0].color, 1.0);
+              vec3 norm = normalMatrix * normal;
+              tempFragColor +=  col * max(dot(vertexToLight.xyz, norm), 0.0);
+            }
+
+            fragColor = tempFragColor;
+
+            vUv = uv;
+
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+         }
+    </script>
+    <script id="fs" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec2 vUv;
+        uniform sampler2D uTexure;
+        uniform vec3 uColor1;
+        uniform vec3 uColor2;
+
+        varying vec4 fragColor;
+
+          void main() {
+
+          vec3 texCol = texture2D( uTexure, vUv ).rgb;
+          vec3 color = vec3(uColor1.r*texCol.r + uColor2.r*abs(texCol.r-1.0),
+            uColor1.g*texCol.g + uColor2.g*abs(texCol.g-1.0),
+            uColor1.b*texCol.b + uColor2.b*abs(texCol.b-1.0));
+
+          gl_FragColor = vec4(fragColor.r * color.r, // R
+                    fragColor.g * color.g, // G
+                    fragColor.b * color.b, // B
+                    fragColor.a);  // A
+
+        }
+    </script>
+
+
+    <script id="vs2" type="x-shader/x-vertex">
+        #include <common>
+        #include <bsdfs>
+        #include <lights_pars_begin>
+
+        varying vec4 fragColor;
+
+        void main() {
+
+            vec4 tempFragColor = vec4(0.0, 0.0, 0.0, 0.0);
+
+            for (int i = 0; i < NUM_DIR_LIGHTS; i++) {
+              vec4 pos = modelViewMatrix * vec4(position, 1.0);
+              vec4 vertexToLight = normalize(vec4(directionalLights[0].direction, 1.0));
+              vec4 col = vec4(directionalLights[0].color, 1.0);
+              vec3 norm = normalMatrix * normal;
+              tempFragColor +=  col * max(dot(vertexToLight.xyz, norm), 0.0);
+            }
+
+            fragColor = tempFragColor;
+
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+         }
+    </script>
+    <script id="fs2" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec4 fragColor;
+        uniform vec3 uColor;
+
+          void main() {
+          vec4 color = vec4(uColor, 1.0);
+          gl_FragColor = fragColor * color;
+        }
+    </script>
+
+
+
+
+  </body>
+</html>
