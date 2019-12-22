@@ -125,11 +125,8 @@ function init() {
 
   headInit();
   render();
-  //render();
 
   //renderer.render(scene, camera);
-
-  //render();
 
   let count = 0;
   let angle = 0;
@@ -155,8 +152,8 @@ function init() {
   function headInit(){
 
 
-    makeS();
     makeHead();
+    headG.rotation.y = -PI/4;
     makeEye();
     makeEar();
     //headG.rotation.y = PI/4;
@@ -200,11 +197,11 @@ function makeS(){
 function makeHead(){
   //const
   const edge = reso * 3;
-  const node = reso * 3;
+  const node = reso * 4;
 
   //material
-  const loader = new THREE.TextureLoader();// テクスチャローダーを作成
-  const texture = loader.load('img/hair.png');// テクスチャ読み込み
+  const loader = new THREE.TextureLoader();
+  const texture = loader.load('img/hair.png');
 
   let uniforms =
     THREE.UniformsUtils.merge( [
@@ -230,7 +227,7 @@ function makeHead(){
   let pt = [];
   const m = edge/2.0;
   for(let i=0; i<node; i++){
-    let ndiv = 1 - i*1.0/(node-1);
+    let ndiv = i*1.0/(node-1);
     pt[i] = [];
     for(let j=0; j<edge; j++){
       let ediv = ( (2*m-j) - 2*(m-(j%m) ) ) / m;
@@ -245,7 +242,7 @@ function makeHead(){
   let uvmap = [];
   for(let i=0; i<node; i++){
     uvmap[i] = [];
-    let y = i*1.0/node;
+    let y = 1-(i*1.0/node);
     for(let j=0; j<edge+1; j++){
       let x = 1.0 - (j*1.0/edge);
       uvmap[i][j] = [x, y];
@@ -276,8 +273,8 @@ function makeEye(){
   const size = wScale/5.8;
 
   //material
-  const loader = new THREE.TextureLoader();// テクスチャローダーを作成
-  const texture = loader.load('img/eye.png');// テクスチャ読み込み
+  const loader = new THREE.TextureLoader();
+  const texture = loader.load('img/eye.png');
 
   let uniforms =
     THREE.UniformsUtils.merge( [
@@ -305,11 +302,11 @@ function makeEye(){
   for(let i=0;i<node;i++){
     pt[i] = [];
     let r = (node-1-i) * size / node;
-    let thick = Math.pow((node-i)*1.0/node, 4) * 8; //ruco_size
+    let thick = Math.pow((node-i)*1.0/node, 4) * 7.2; //ruco_size
     z += thick;
     for(let j=0;j<edge;j++){
       let x = r * Math.cos( j*2*PI/(edge-1) );
-      let y = r * Math.sin( j*2*PI/(edge-1) );
+      let y = r * Math.sin( j*2*-PI/(edge-1) );
       if(i==0){z = thick - Math.abs( r/8 * Math.cos( j*2*PI/(edge-1) ) );}
       pt[i][j] = [x,y,z];
     }
@@ -320,10 +317,10 @@ function makeEye(){
   let uvmap = [];
   for(let i=0; i<node; i++){
     uvmap[i] = [];
-    let y = 1.0 - (i*1.0/node);
+    let y = 1-i*(1.0/node);
     for(let j=0; j<edge; j++){
-      let x = 1.0 - (j*1.0/edge);
-      uvmap[i][j] = [x, y];
+      let x = 1-j*(1.0/edge);
+      uvmap[i][edge-1-j] = [x, y];
     }
   }
   let uvs = setUvs(node, edge, uvmap);
@@ -333,23 +330,20 @@ function makeEye(){
   geo_merg.mergeVertices();
   geo_merg.computeVertexNormals(true);
 
-  //object
+  //position
   const posL = headPtCal(0.5, 0.16);
   const posR = headPtCal(0.5, -0.16);
-  let sPosL = new THREE.Vector3(posL[0], posL[1], posL[2]);
-  let sPosR = new THREE.Vector3(posR[0], posR[1], posR[2]);
-  sPosL.z *= 0.91;
-  sPosR.z *= 0.91;
-  let objL = new THREE.Mesh(geo_merg, shdrMat);
-  let objR = objL.clone();
-  objL.position.set(sPosL.x, sPosL.y, sPosL.z);
-  objL.rotation.x = -PI/12;
-  objL.rotation.y = PI/12;
-  objR.position.set(sPosR.x, sPosR.y, sPosR.z);
-  objR.rotation.x = -PI/12;
-  objR.rotation.y = -PI/12;
-  headG.add(objL);
-  headG.add(objR);
+  const pos = [posL, posR];
+  const roty = [PI/12, -PI/12];
+  for(let i=0; i<2; i++){
+    let sPos = new THREE.Vector3(pos[i][0], pos[i][1], pos[i][2]);
+    sPos.z *= 0.91;
+    let obj = new THREE.Mesh(geo_merg, shdrMat);
+    obj.position.set(sPos.x, sPos.y, sPos.z);
+    obj.rotation.x = -PI/12;
+    obj.rotation.y = roty[i];
+    headG.add(obj);
+  }
 }
 
 
@@ -359,12 +353,12 @@ function makeEar(){
   const node = 6;
 
   //radius
-  const s = wScale/2;
+  const s = wScale/10;
   cUniforms.uColor.value = new THREE.Color(0xff0000);
 
   const mat = new THREE.MeshPhongMaterial({
     color: 0xee4466,
-    side:THREE.DoubleSide
+    //side:THREE.DoubleSide
   });
 
   let w1 = new Array(node);
@@ -382,9 +376,10 @@ function makeEar(){
   let geo = makeGeometry(node, edge, pt);
   let obj = new THREE.Mesh(geo, cMat);
 
-  let pos = headPtCal(0.5, 0.5);
+  let pos = headPtCal(0.55, 0.5);
+  //pos[0] *= 0.9;
 
-  obj.rotation.y = PI/2;
+  obj.rotation.x = -PI/16;
   obj.position.set(pos[0],pos[1],pos[2]);
   headG.add(obj);
 
@@ -905,7 +900,7 @@ function makeEar(){
 
   function setIndices(nNode, nEdge){
     let numIndices = (VER_RECT*(nNode-1)*nEdge)/2;
-    let order = [0,1,2,2,3,0];
+    let order = [0,3,2,2,1,0];
     let indices = new Uint16Array(numIndices);
     for(let i=0; i<numIndices/6; i++){
       for(let j=0; j<order.length; j++){
