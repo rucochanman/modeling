@@ -111,8 +111,10 @@ function init() {
   ///////////////////////////////////////inits
 
 
-  headInit();
+  //headInit();
   arm_init( 0.5, 0.2, 7*PI/8, 0 );
+  //armG.position.set(20,-1,0);
+
   render();
 
   //renderer.render(scene, camera);
@@ -156,6 +158,105 @@ function init() {
 
 
 ///////////////////////////////////////////////////////////////
+
+
+
+///////body
+/*
+
+void make_body(float lr_value, float fb_value, float tw_value){
+  //value mapping
+  float lr = map(lr_value, -1, 1, 3*PI/4, PI/4);
+  float fb = map(fb_value, -1, 1.5, 3*PI/4, PI/8);
+  float tw = map(tw_value, -1, 1, PI/2, -PI/2); 
+  //calc bone
+  float h = BODY_HEIGHT;
+  float ep_x = h * cos(lr);
+  float ep_y = -h * sin(lr) * sin(fb);  
+  float ep_z = h * sin(lr) * cos(fb); 
+  //face_point
+  PVector hp = new PVector(ep_x, ep_y, ep_z).normalize();
+  float hh = h + SCALE/2.5;
+  PVector head_pos = hp.mult(hh);
+  make_face(lr, fb, tw, head_pos);
+  //culc points
+  PVector[][] pt = new PVector[BODY_NODE][BODY_EDGE];
+  for(int i=0;i<BODY_NODE;i++){
+      //bone line
+      float t = i * 1.0/(BODY_NODE-1);
+      float sampx = ep_x * pow(t,2);
+      float sampy = (-h * t * (1-t)) + (ep_y * pow(t,2)); 
+      float sampz = ep_z * pow(t,2);
+      PVector bone = new PVector(sampx, sampy, sampz);  
+      //units
+      PVector unit = new PVector(cos(tw*t),0,sin(tw*t));
+      PVector vb = unit.cross(bone).normalize(); 
+      if(i==0){vb = new PVector(0,0,-1);}
+      PVector vr = vb.cross(bone).normalize(); 
+      if(i==0){vr = new PVector(-1,0,0);}
+      PVector vf = new PVector(-vb.x,-vb.y,-vb.z);
+      PVector vl = new PVector(-vr.x,-vr.y,-vr.z);  
+      //set points
+      int seg = BODY_EDGE/4;
+      float xr = BODY_WIDTH*cos(pow(t,1.2)*PI/4);
+      float yr = xr * 0.65;        
+      for(int j=0; j<seg; j++){ 
+        float div = j * 1.0/seg;
+        float rad = div * HALF_PI;
+        float r1 = sqrt(pow(yr*sin(HALF_PI-rad),2)+pow(xr*cos(HALF_PI-rad),2));
+        float r2 = sqrt(pow(yr*sin(rad),2)+pow(xr*cos(rad),2));        
+        pt[i][j] = PVector.lerp(vb,vr,div).normalize().mult(r1).add(bone);
+        pt[i][j+seg] = PVector.lerp(vr,vf,div).normalize().mult(r2).add(bone);
+        pt[i][j+2*seg] = PVector.lerp(vf,vl,div).normalize().mult(r1).add(bone);
+        pt[i][j+3*seg] = PVector.lerp(vl,vb,div).normalize().mult(r2).add(bone);
+      }
+  }
+  make_mesh(BODY_NODE, BODY_EDGE, pt);
+  
+  //arm_pos
+  float a_h = 0.66;
+  float a_r = (BODY_WIDTH*0.9)*cos(pow(a_h,1.2)*PI/4);
+  float asampx = ep_x * pow(a_h,2);
+  float asampy = (-h * a_h * (1-a_h)) + (ep_y * pow(a_h,2)); 
+  float asampz = ep_z * pow(a_h,2);
+  PVector abone = new PVector(asampx, asampy, asampz);
+  PVector aunit = new PVector(cos(tw*a_h),0,sin(tw*a_h));
+  PVector avf = aunit.cross(abone).normalize().mult(a_r);  
+  PVector avr = avf.cross(abone).normalize().mult(a_r); 
+  PVector avl = new PVector(-avr.x,-avr.y,-avr.z);
+  armR_pos = avr.add(abone);
+  armL_pos = avl.add(abone);
+  
+  make_hip();
+}
+
+
+void make_hip(){
+  int hip_node = int(BODY_NODE/2);
+  int hip_edge = BODY_EDGE;
+  float hip_height = BODY_HEIGHT/2;
+  PVector[][] pt = new PVector[hip_node][hip_edge];   
+  for(int i=0; i<hip_node;i++){ 
+    float t = i * 1.0/(hip_node-1);
+    float y = t*hip_height;
+    for(int j=0; j<BODY_EDGE;j++){
+      float xr = BODY_WIDTH*cos(pow(t,1.5)*PI/2);
+      float yr = xr * 0.65;      
+      float x = xr * cos(j*TWO_PI/hip_edge);
+      float z = yr * sin(j*TWO_PI/hip_edge);      
+      pt[i][j] = new PVector(x,y,z);
+    }
+  }
+  fill(90,90,50);
+  make_mesh(hip_node, hip_edge, pt);
+}
+
+
+
+
+*/
+
+
 
 
 
@@ -738,7 +839,7 @@ function init() {
     let {ep1, cp1, ep2, cp2} = getBezierpt(bend1, bend2);
 
     let node = armNode;
-    
+
     //arm_geoUpdate
     let armu_pt = makeCylinder(OPEN, node, edge, ep1, cp1, arm1Thick, arm1Thick);
     updateGeometry(node, edge, armu_pt, geoArmUprL);
