@@ -142,19 +142,14 @@ function init() {
 
 
     makeHead();
-    headG.rotation.y = -PI/5;
-    headG.rotation.x = PI/40;
+    //headG.rotation.y = PI/8;
+    //headG.rotation.x = PI/30;
     makeEye();
     makeEar();
-    //makeEar2();
-    //headG.rotation.y = -PI/3;
-
     makeLines();
-    //makeEar();
+    hair_init();
 
-    hair_init2();
 
-    //headG.rotation.y = -PI/8;
 
 
   }
@@ -165,225 +160,198 @@ function init() {
 
 
 
+//////////////////////////head
 
+  function makeHead(){
+    //const
+    const edge = reso * 3;
+    const node = reso * 4;
 
+    //material
+    const loader = new THREE.TextureLoader();
+    const texture = loader.load('img/hair.png');
 
-function makeS(){
+    let uniforms =
+      THREE.UniformsUtils.merge( [
+        THREE.UniformsLib['lights'],
+        {
+          'uTexure': { value: null },
+          'uColor1': { value: skinCol },
+          'uColor2': { value: hairCol }
+        },
+      ] );
+    uniforms.uTexure.value = texture;
 
-  let geometry = new THREE.SphereGeometry( 50, 32, 32 );
-  const mat = new THREE.MeshPhongMaterial({
-    color: 0x994466,
-    //side:THREE.DoubleSide
-  });
+    let shdrMat = new THREE.ShaderMaterial({
+      side:THREE.DoubleSide,
+      uniforms: uniforms,
+      vertexShader: document.getElementById('vs').textContent,
+      fragmentShader: document.getElementById('fs').textContent,
+      lights: true
+    });
 
-  let sphere = new THREE.Mesh( geometry, mat );
-  scene.add( sphere );
-  sphere.position.x = 150;
-  sphere.position.z = 0;
-
-}
-
-
-
-function makeHead(){
-  //const
-  const edge = reso * 3;
-  const node = reso * 4;
-
-  //material
-  const loader = new THREE.TextureLoader();
-  const texture = loader.load('img/hair.png');
-
-  let uniforms =
-    THREE.UniformsUtils.merge( [
-      THREE.UniformsLib['lights'],
-      //THREE.UniformsLib['ambient'],
-      {
-        'uTexure': { value: null },
-        'uColor1': { value: skinCol },
-        'uColor2': { value: hairCol }
-      },
-    ] );
-  uniforms.uTexure.value = texture;
-
-  let shdrMat = new THREE.ShaderMaterial({
-    side:THREE.DoubleSide,
-    uniforms: uniforms,
-    vertexShader: document.getElementById('vs').textContent,
-    fragmentShader: document.getElementById('fs').textContent,
-    lights: true
-  });
-
-  //geometry
-  let pt = [];
-  const m = edge/2.0;
-  for(let i=0; i<node; i++){
-    let ndiv = i*1.0/(node-1);
-    pt[i] = [];
-    for(let j=0; j<edge; j++){
-      let ediv = ( (2*m-j) - 2*(m-(j%m) ) ) / m;
-      pt[i][j] = headPtCal(ndiv, ediv);
+    //geometry
+    let pt = [];
+    const m = edge/2.0;
+    for(let i=0; i<node; i++){
+      let ndiv = i*1.0/(node-1);
+      pt[i] = [];
+      for(let j=0; j<edge; j++){
+        let ediv = ( (2*m-j) - 2*(m-(j%m) ) ) / m;
+        pt[i][j] = headPtCal(ndiv, ediv);
+      }
+      pt[i][edge] = headPtCal(ndiv, 0);
     }
-    pt[i][edge] = headPtCal(ndiv, 0);
-  }
-  let geo = makeGeometry(node, edge+1, pt);
+    let geo = makeGeometry(node, edge+1, pt);
 
-
-  //uvmap
-  let uvmap = [];
-  for(let i=0; i<node; i++){
-    uvmap[i] = [];
-    let y = 1-(i*1.0/node);
-    for(let j=0; j<edge+1; j++){
-      let x = 1.0 - (j*1.0/edge);
-      uvmap[i][j] = [x, y];
+    //uvmap
+    let uvmap = [];
+    for(let i=0; i<node; i++){
+      uvmap[i] = [];
+      let y = 1-(i*1.0/node);
+      for(let j=0; j<edge+1; j++){
+        let x = 1.0 - (j*1.0/edge);
+        uvmap[i][j] = [x, y];
+      }
     }
-  }
-  let uvs = setUvs(node, edge+1, uvmap);
-  geo.addAttribute('uv', new THREE.BufferAttribute(uvs, 2) );
+    let uvs = setUvs(node, edge+1, uvmap);
+    geo.addAttribute('uv', new THREE.BufferAttribute(uvs, 2) );
 
-  //scene_add
-  let geo_merg = new THREE.Geometry().fromBufferGeometry( geo );
-  geo_merg.mergeVertices();
-  geo_merg.computeVertexNormals(true);
+    //scene_add
+    let geo_merg = new THREE.Geometry().fromBufferGeometry( geo );
+    geo_merg.mergeVertices();
+    geo_merg.computeVertexNormals(true);
 
-  let obj = new THREE.Mesh(geo_merg, shdrMat);
-  headG.add(obj);
-  scene.add(headG);
-
-
-}
-
-function makeEye(){
-
-  const node = reso;
-  const edge = 3 * reso;
-  const size = wScale/5.8;
-  const base = size/3.2;
-
-  //material
-  const loader = new THREE.TextureLoader();
-  const texture = loader.load('img/eye.png');
-
-  let uniforms =
-    THREE.UniformsUtils.merge( [
-      THREE.UniformsLib['lights'],
-      //THREE.UniformsLib['ambient'],
-      {
-        'uTexure': { value: null },
-        'uColor1': { value: highCol },
-        'uColor2': { value: eyeCol }
-      },
-    ] );
-  uniforms.uTexure.value = texture;
-
-  let shdrMat = new THREE.ShaderMaterial({
-    side:THREE.DoubleSide,
-    uniforms: uniforms,
-    vertexShader: document.getElementById('vs').textContent,
-    fragmentShader: document.getElementById('fs').textContent,
-    lights: true
-  });
-
-
-  //geometry
-  let pt = [];
-  let z = 0;
-  console.log(base);
-
-  for(let i=0;i<node;i++){
-    pt[i] = [];
-    let r = (node-1-i) * size / node;
-    let thick = Math.pow((node-i)*1.0/node, 4) * base; //ruco_size
-    z += thick;
-    for(let j=0;j<edge+1;j++){
-      let x = r * Math.cos( j*2*PI/(edge) );
-      let y = r * Math.sin( j*2*-PI/(edge) );
-      if(i==0){z = thick - Math.abs( r/8 * Math.cos( j*2*PI/(edge) ) );}
-      pt[i][j] = [x,y,z];
-    }
-  }
-  let geo = makeGeometry(node, edge+1, pt);
-
-
-  //geometry
-  let uvmap = [];
-  for(let i=0;i<node;i++){
-    uvmap[i] = [];
-    for(let j=0;j<edge+1;j++){
-      let x = mapping(pt[i][j][0],-size, size, 0.0, (node-1)/node);
-      let y = mapping(pt[i][j][1],-size, size, 0.0, (node-1)/node);
-      uvmap[i][j] = [x,y];
-    }
-  }
-
-  let uvs = setUvs(node, edge+1, uvmap);
-  geo.addAttribute('uv', new THREE.BufferAttribute(uvs, 2) );
-
-  let geo_merg = new THREE.Geometry().fromBufferGeometry( geo );
-  geo_merg.mergeVertices();
-  geo_merg.computeVertexNormals(true);
-
-  //position
-  const posL = headPtCal(0.5, 0.16);
-  const posR = headPtCal(0.5, -0.16);
-  const pos = [posL, posR];
-  const roty = [PI/12, -PI/12];
-  for(let i=0; i<2; i++){
-    let sPos = new THREE.Vector3(pos[i][0], pos[i][1], pos[i][2]);
-    sPos.z *= 0.91;
     let obj = new THREE.Mesh(geo_merg, shdrMat);
-    obj.position.set(sPos.x, sPos.y, sPos.z);
-    obj.rotation.x = -PI/12;
-    obj.rotation.y = roty[i];
     headG.add(obj);
-  }
-}
-
-function makeEar(){
-
-  //defs
-  const edge = 8;
-  const node = 6;
-  const s = wScale/10;
-
-  //thick
-  let w1 = new Array(node);
-  let w2 = new Array(node);
-  for(let i=0; i<node; i++){
-    let t = i * 1.0/(node-1);
-    w1[i] = s * Math.cos(t*PI/2);
-    w2[i] = w1[i]/3;
+    scene.add(headG);
   }
 
-  const ep = new THREE.Vector2( s,0 );
-  const cp = new THREE.Vector2( s,0 );
-  let pt = makeCylinder(OPEN, node, edge, ep, cp, w1, w2);
-  let geo = makeGeometry(node, edge, pt);
 
-  let geo_merg = new THREE.Geometry().fromBufferGeometry( geo );
-  geo_merg.mergeVertices();
-  geo_merg.computeVertexNormals(true);
+  function makeEye(){
 
-  //position
-  const posL = headPtCal(0.52, 0.5);
-  const posR = headPtCal(0.52, -0.5);
-  const pos = [posL, posR];
-  const roty = [0, PI];
-  for(let i=0; i<2; i++){
-    let sPos = new THREE.Vector3(pos[i][0], pos[i][1], pos[i][2]);
-    let obj = new THREE.Mesh(geo_merg, skinMat);
-    sPos.x *= 0.97;
-    obj.position.set(sPos.x, sPos.y, sPos.z);
-    obj.rotation.y = roty[i];
-    obj.rotation.x = -PI/14;
-    headG.add(obj);
+    const node = reso;
+    const edge = 3 * reso;
+    const size = wScale/5.8;
+    const base = size/3.2;
+
+    //material
+    const loader = new THREE.TextureLoader();
+    const texture = loader.load('img/eye.png');
+
+    let uniforms =
+      THREE.UniformsUtils.merge( [
+        THREE.UniformsLib['lights'],
+        {
+          'uTexure': { value: null },
+          'uColor1': { value: highCol },
+          'uColor2': { value: eyeCol }
+        },
+      ] );
+    uniforms.uTexure.value = texture;
+
+    let shdrMat = new THREE.ShaderMaterial({
+      side:THREE.DoubleSide,
+      uniforms: uniforms,
+      vertexShader: document.getElementById('vs').textContent,
+      fragmentShader: document.getElementById('fs').textContent,
+      lights: true
+    });
+
+    //geometry
+    let pt = [];
+    let z = 0;
+
+    for(let i=0;i<node;i++){
+      pt[i] = [];
+      let r = (node-1-i) * size / node;
+      let thick = Math.pow((node-i)*1.0/node, 4) * base; //ruco_size
+      z += thick;
+      for(let j=0;j<edge+1;j++){
+        let x = r * Math.cos( j*2*PI/(edge) );
+        let y = r * Math.sin( j*2*-PI/(edge) );
+        if(i==0){z = thick - Math.abs( r/8 * Math.cos( j*2*PI/(edge) ) );}
+        pt[i][j] = [x,y,z];
+      }
+    }
+    let geo = makeGeometry(node, edge+1, pt);
+
+    //geometry
+    let uvmap = [];
+    for(let i=0;i<node;i++){
+      uvmap[i] = [];
+      for(let j=0;j<edge+1;j++){
+        let x = mapping(pt[i][j][0],-size, size, 0.0, (node-1)/node);
+        let y = mapping(pt[i][j][1],-size, size, 0.0, (node-1)/node);
+        uvmap[i][j] = [x,y];
+      }
+    }
+
+    let uvs = setUvs(node, edge+1, uvmap);
+
+    geo.addAttribute('uv', new THREE.BufferAttribute(uvs, 2) );
+    let geo_merg = new THREE.Geometry().fromBufferGeometry( geo );
+    geo_merg.mergeVertices();
+    geo_merg.computeVertexNormals(true);
+
+    //position
+    const posL = headPtCal(0.5, 0.16);
+    const posR = headPtCal(0.5, -0.16);
+    const pos = [posL, posR];
+    const roty = [PI/12, -PI/12];
+    for(let i=0; i<2; i++){
+      let sPos = new THREE.Vector3(pos[i][0], pos[i][1], pos[i][2]);
+      sPos.z *= 0.91;
+      let obj = new THREE.Mesh(geo_merg, shdrMat);
+      obj.position.set(sPos.x, sPos.y, sPos.z);
+      obj.rotation.x = -PI/12;
+      obj.rotation.y = roty[i];
+      headG.add(obj);
+    }
   }
-}
+
+  function makeEar(){
+
+    //defs
+    const edge = 8;
+    const node = 6;
+    const s = wScale/10;
+
+    //thick
+    let w1 = new Array(node);
+    let w2 = new Array(node);
+    for(let i=0; i<node; i++){
+      let t = i * 1.0/(node-1);
+      w1[i] = s * Math.cos(t*PI/2);
+      w2[i] = w1[i]/3;
+    }
+
+    const ep = new THREE.Vector2( s,0 );
+    const cp = new THREE.Vector2( s,0 );
+    let pt = makeCylinder(OPEN, node, edge, ep, cp, w1, w2);
+    let geo = makeGeometry(node, edge, pt);
+    let geo_merg = new THREE.Geometry().fromBufferGeometry( geo );
+    geo_merg.mergeVertices();
+    geo_merg.computeVertexNormals(true);
+
+    //position
+    const posL = headPtCal(0.52, 0.5);
+    const posR = headPtCal(0.52, -0.5);
+    const pos = [posL, posR];
+    const roty = [0, PI];
+    for(let i=0; i<2; i++){
+      let sPos = new THREE.Vector3(pos[i][0], pos[i][1], pos[i][2]);
+      let obj = new THREE.Mesh(geo_merg, skinMat);
+      sPos.x *= 0.97;
+      obj.position.set(sPos.x, sPos.y, sPos.z);
+      obj.rotation.y = roty[i];
+      obj.rotation.x = -PI/14;
+      headG.add(obj);
+    }
+  }
 
 
-
-  function hair_init2(){
+  function hair_init(){
 
     const edge = 12;
     const node = 12;
@@ -392,55 +360,54 @@ function makeEar(){
     let wy = new Array(node);
 
     //1左端
-    let w = wScale/11;
+    let w = wScale/9;
     for(let j=0; j<node; j++){
       let t = j * 1.0/(node-1);
-      wx[j] = w * Math.cos(Math.pow(t,0.9)*(PI/2*0.95));
-      wy[j] = w * 0.36 * Math.cos(Math.pow(t,1.3)*(PI/2*0.95));
+      wx[j] = w * Math.cos(Math.pow(t,0.7)*(PI/2*0.96));
+      wy[j] = w * 0.4 * Math.cos(Math.pow(t,1.3)*(PI/2*0.95));
     }
-    let h = wScale/3.4;
-    let ep = new THREE.Vector2( h, -h/2.1 );
+    let h = wScale/3.2;
+    let ep = new THREE.Vector2( h, -h/2.5 );
     let cp1 = new THREE.Vector2( h*0.3, h/8 );
-    let cp2 = new THREE.Vector2( h*1, h/18 );
+    let cp2 = new THREE.Vector2( h*1, h/5 );
     let x = -0.48;
-    let y = 0.07;
+    let y = 0.066;
     let rotx = PI/18;
     let roty = -PI/5;
     makeHair(node, edge, wx, wy, ep, cp1, cp2, x, y, rotx, roty);
 
     //2
-    w = wScale/8;
+    w = wScale/6.8;
     for(let j=0; j<node; j++){
       let t = j * 1.0/(node-1);
-      wx[j] = w * Math.cos(Math.pow(t,1.1)*(PI/2*0.96));
-      wy[j] = w * 0.4 * Math.cos(Math.pow(t,1.5)*(PI/2*0.96));
+      wx[j] = w * Math.cos(Math.pow(t,0.8)*(PI/2*0.97));
+      wy[j] = w * 0.38 * Math.cos(Math.pow(t,0.7)*(PI/2*0.96));
     }
-    h = wScale/3.4;
-    ep = new THREE.Vector2( h, -h*0.6 );
-    cp1 = new THREE.Vector2( h*0.2, h*0.03 );
-    cp2 = new THREE.Vector2( h*0.98, h*0.28 );
+    h = wScale/3.0;
+    ep = new THREE.Vector2( h, -h*0.55 );
+    cp1 = new THREE.Vector2( h*0.23, h*0.1 );
+    cp2 = new THREE.Vector2( h*1.02, h*0.25 );
     x = -0.3;
-    y = 0.047;
+    y = 0.04;
     rotx = -PI/45;
-    roty = -PI/8;
+    roty = -PI/12;
     makeHair(node, edge, wx, wy, ep, cp1, cp2, x, y, rotx, roty);
 
-
     //3
-    w = wScale/20;
+    w = wScale/16;
     for(let j=0; j<node; j++){
       let t = j * 1.0/(node-1);
-      wx[j] = w * Math.cos(Math.pow(t,1.4)*(PI/2*0.95));
-      wy[j] = w * 0.55 * Math.cos(Math.pow(t,1.5)*(PI/2*0.95));
+      wx[j] = w * Math.cos(Math.pow(t,1.2)*(PI/2*0.95));
+      wy[j] = w * 0.48 * Math.cos(Math.pow(t,1.5)*(PI/2*0.95));
     }
-    h = wScale/3.3;
-    ep = new THREE.Vector2( h, -h/1.3 );
-    cp1 = new THREE.Vector2( h/12, h/18 );
-    cp2 = new THREE.Vector2( h*0.9, h/8 );
-    x = -0.39;
+    h = wScale/4.2;
+    ep = new THREE.Vector2( h, -h/1.7 );
+    cp1 = new THREE.Vector2( h*0.4, h/10 );
+    cp2 = new THREE.Vector2( h*1.2, h/12 );
+    x = -0.23;
     y = 0.04;
-    rotx = -PI/10;
-    roty = PI/48;
+    rotx = -PI/12;
+    roty = -PI/50;
     makeHair(node, edge, wx, wy, ep, cp1, cp2, x, y, rotx, roty);
 
     //4
@@ -448,35 +415,34 @@ function makeEar(){
     for(let j=0; j<node; j++){
       let t = j * 1.0/(node-1);
       wx[j] = w * Math.cos(Math.pow(t,0.8)*(PI/2*0.97));
-      wy[j] = w * 0.43 * Math.cos(Math.pow(t,1.1)*(PI/2*0.96));
+      wy[j] = w * 0.48 * Math.cos(Math.pow(t,0.8)*(PI/2*0.96));
     }
-    h = wScale/3.8;
-    ep = new THREE.Vector2( h, -h/1.8 );
-    cp1 = new THREE.Vector2( h*0.3, h*0.1 );
-    cp2 = new THREE.Vector2( h*0.98, h*0.15 );
-    x = 0.08;
-    y = 0.049;
-    rotx = -PI/50;
-    roty = -PI/16;
+    h = wScale/3.5;
+    ep = new THREE.Vector2( h, -h/1.9 );
+    cp1 = new THREE.Vector2( h*0.23, h*0.01 );
+    cp2 = new THREE.Vector2( h*0.8, h*0.42 );
+    x = 0.1;
+    y = 0.03;
+    rotx = -PI/46;
+    roty = -PI/14;
     makeHair(node, edge, wx, wy, ep, cp1, cp2, x, y, rotx, roty);
 
     //5跳ね上がり
-    w = wScale/14;
+    w = wScale/11;
     for(let j=0; j<node; j++){
       let t = j * 1.0/(node-1);
       wx[j] = w * Math.cos(Math.pow(t,1.4)*(PI/2*0.95));
-      wy[j] = w * 0.48 * Math.cos(Math.pow(t,1.5)*(PI/2*0.95));
+      wy[j] = w * 0.4 * Math.cos(Math.pow(t,1.5)*(PI/2*0.95));
     }
     h = wScale/2.9;
     ep = new THREE.Vector2( h, h/3 );
     cp1 = new THREE.Vector2( h/5, h/5 );
-    cp2 = new THREE.Vector2( h*0.6, -h/10 );
-    x = -0.39;
-    y = 0.062;
-    rotx = 0;
+    cp2 = new THREE.Vector2( h*0.7, -h/10 );
+    x = -0.35;
+    y = 0.06;
+    rotx = PI/50;
     roty = -PI/7;
     makeHair(node, edge, wx, wy, ep, cp1, cp2, x, y, rotx, roty);
-
 
     //後頭部
     w = wScale/14;
@@ -511,11 +477,7 @@ function makeEar(){
     rotx = 0;
     roty = 0;
     makeHair(node, edge, wx, wy, ep, cp1, cp2, x, y, rotx, roty);
-
-
   }
-
-
 
 
   function makeHair(node, edge, w1, w2, ep, cp1, cp2, x, y, rx, ry){
@@ -570,7 +532,6 @@ function makeEar(){
     obj.rotation.x = rx;
     obj.rotation.y = -PI/2 + ry;
     headG.add(obj);
-
   }
 
 
@@ -635,13 +596,7 @@ function makeEar(){
     let ebObjR = new THREE.Line( ebGeoR, mat );
     headG.add( ebObjL );
     headG.add( ebObjR );
-
-
   }
-
-
-
-
 
 
   function headPtCal(ndiv, ediv){
@@ -687,9 +642,6 @@ function makeEar(){
     let pt = [x,y,z];
     return pt;
   }
-
-
-
 
 
 
@@ -786,6 +738,7 @@ function makeEar(){
     let {ep1, cp1, ep2, cp2} = getBezierpt(bend1, bend2);
 
     let node = armNode;
+    
     //arm_geoUpdate
     let armu_pt = makeCylinder(OPEN, node, edge, ep1, cp1, arm1Thick, arm1Thick);
     updateGeometry(node, edge, armu_pt, geoArmUprL);
