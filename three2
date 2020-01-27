@@ -48,12 +48,13 @@ function init() {
   const LEFT = false;
   const RIGHT = true;
 
-  //cylinder
-  let pipePos = new THREE.Vector2();
+  //pipe
   let pipeRad = 0;
+  let jointPos = new THREE.Vector2();
+  let lowerPipePos = new THREE.Vector2();
+
   //pos
   let headPos = new THREE.Vector3();
-
 
   const reso = 6;
   const headNode = 4 * reso;
@@ -64,15 +65,15 @@ function init() {
   const bodyEdge = 2 * reso; //4の倍数
 
   const numFing = 4;
-  const wScale = 140;
 
   //size
+  const wScale = 140;
   const armLength = wScale/4;
   const armLength2 = armLength * 1.2;
   const armThick = wScale/10;
   const headSize = wScale/1.2;
-  const bodyLength = wScale/3;
-  const bodyWidth = wScale/3.5;
+  const bodyLength = wScale/2;
+  const bodyWidth = wScale/2.5;
   let upperArmThick = new Array(pipeNode);
   let lowerArmThick = new Array(pipeNode);
   let lowerArmWidth = new Array(pipeNode);
@@ -137,6 +138,8 @@ function init() {
   //groups
   let handGL = new THREE.Group();
   let handGR = new THREE.Group();
+  let armljGL = new THREE.Group();
+  let armljGR = new THREE.Group();
   let armlGL = new THREE.Group();
   let armlGR = new THREE.Group();
   let armGL = new THREE.Group();
@@ -152,25 +155,31 @@ function init() {
   //headG.position.set(0,20,0);
   //headG.rotation.y = -PI/8;
   arm_init();
-  arm_update(LEFT, 0.8, 0.0, 0, PI);
+
+  arm_update(LEFT, 0.0, 1, 0, 0);
+  arm_update(RIGHT, 0.2, 1, 0, 0);
+  armGR.rotation.y = PI;
+  makeBody(0,0,0);
+
   //arm_update(LEFT, 0.8, 0.0, 0, PI/2);
   //arm_update(RIGHT, 0.0, 0.0, 0, PI/2);
 
-  armGL.position.set(80,-1,0);
+  //armGL.position.set(80,-1,0);
   //maketest();
   //makeBody(1, 0.0, 0.0);
 
+  //makej();
 
   let count = 0;
   let n = 0;
   let n2 = 0;
   let flag = false;
-  animate();
+  //animate();
 
 
 
   //renderer.render(scene, camera);
-  //render();
+  render();
 
   //renderer.render(scene, camera);
 
@@ -216,7 +225,7 @@ function init() {
 
   function render(){
       requestAnimationFrame(render);
-      //arm_update( 0.5, 0.0, 0, 0);
+      //arm_update( LEFT, 1.5, 0.0, 0, PI/64);
       renderer.render(scene, camera);
   }
 
@@ -270,6 +279,11 @@ function makeBody( lr_value, fb_value, tw_value ){
   const edge = bodyEdge;
   const seg = edge/4;
 
+  const arm_node = Math.floor(node*0.7);
+  let arm_posL;
+  let arm_posR;
+  //console.log(arm_node);
+
   //value mapping
   const lr = mapping(lr_value, -1, 1, 3*PI/4, PI/4);
   const fb = mapping(fb_value, -1, 1.5, 3*PI/4, PI/8);
@@ -281,17 +295,17 @@ function makeBody( lr_value, fb_value, tw_value ){
   const ep_y = h * Math.sin(lr) * Math.sin(fb);
   const ep_z = h * Math.sin(lr) * Math.cos(fb);
   const ep = new THREE.Vector3(ep_x, ep_y, ep_z);
-  const cp = new THREE.Vector3(ep.x/2, ep.y/2, ep.z/2);
+  const cp = new THREE.Vector3(0, h/2, 0);
   const center = new THREE.Vector3();
   let curve = new THREE.QuadraticBezierCurve3(center,cp,ep);
   let bone = curve.getPoints( node-1 );
   bone[0] = new THREE.Vector3(0,1,0);
 
-
+  //set points
   let pt = [];
   for(let i=0;i<node;i++){
       pt[i] = [];
-      //units
+      //make base
       let t = i * 1.0/(node-1);
       let base = new THREE.Vector3(Math.cos(tw*t), 0, Math.sin(tw*t));
       let front = base.cross(bone[i]).normalize();
@@ -302,6 +316,13 @@ function makeBody( lr_value, fb_value, tw_value ){
       let width = bodyWidth * Math.cos(Math.pow(t,1.2)*PI/4);
       let thick = width * 0.65;
 
+      if(i==arm_node){
+        arm_posL = right.clone().multiplyScalar(width*0.85).add(bone[i]);
+        arm_posR = left.clone().multiplyScalar(width*0.85).add(bone[i]);
+
+        console.log(right);
+      }
+
       for(let j=0; j<seg; j++){
         //defs
         let div = j * 1.0 / seg;
@@ -310,30 +331,31 @@ function makeBody( lr_value, fb_value, tw_value ){
         let s1 = new THREE.Vector2(thick*Math.sin(d1), width*Math.cos(d1)).length();
         let s2 = new THREE.Vector2(thick*Math.sin(d2), width*Math.cos(d2)).length();
         //units
-        let front_right = front.clone().lerp(right,div).normalize();
-        let right_back = right.clone().lerp(back,div).normalize();
-        let back_left = front_right.clone().negate();
-        let left_front = right_back.clone().negate();
+        let front_left = front.clone().lerp(left,div).normalize();
+        let left_back = left.clone().lerp(back,div).normalize();
+        let back_right = front_left.clone().negate();
+        let right_front = left_back.clone().negate();
         //set points
-        pt[i][j+0*seg] = front_right.multiplyScalar(s2).add(bone[i]).toArray();
-        pt[i][j+1*seg] = right_back.multiplyScalar(s1).add(bone[i]).toArray();
-        pt[i][j+2*seg] = back_left.multiplyScalar(s2).add(bone[i]).toArray();
-        pt[i][j+3*seg] = left_front.multiplyScalar(s1).add(bone[i]).toArray();
+        pt[i][j+0*seg] = front_left.multiplyScalar(s2).add(bone[i]).toArray();
+        pt[i][j+1*seg] = left_back.multiplyScalar(s1).add(bone[i]).toArray();
+        pt[i][j+2*seg] = back_right.multiplyScalar(s2).add(bone[i]).toArray();
+        pt[i][j+3*seg] = right_front.multiplyScalar(s1).add(bone[i]).toArray();
       }
   }
 
-  //make_face(lr, fb, tw, head_pos);
-  console.log(pt[0][0]);
   let geo = makeGeometry(node, edge, pt);
   geo = mergeGeometry(geo);
   const material = new THREE.MeshPhongMaterial({color: 0x6699FF});
-  let testObj = new THREE.Mesh(geo, material);
+  let testObj = new THREE.Mesh(geo, bodyMat);
   scene.add(testObj);
   testObj.position.set(0,0,0);
 
   //head_pos
   const head_len = h + headSize/2;
   //headPos = ep.clone().normalize().multiplyScalar(head_len);
+
+  armGL.position.set(arm_posL.x, arm_posL.y, arm_posL.z);
+  armGR.position.set(arm_posR.x, arm_posR.y, arm_posR.z);
 
 
 }
@@ -703,7 +725,6 @@ function makeBody( lr_value, fb_value, tw_value ){
     headG.add( elObjL );
     headG.add( elObjR );
 
-
     ////eye_brown
     let ebPt1L = headPtCal(0.22, -0.14);
     let ebPt2L = headPtCal(0.235, -0.20);
@@ -775,111 +796,15 @@ function makeBody( lr_value, fb_value, tw_value ){
 //////////////////////arm
 
 
-  function arm_init2(v1, v2, rot1, rot2){
-
-    //make_hand
-    const cp = new THREE.Vector2();
-    let node = pipeNode;
-    let edge = pipeEdge;
-
-    pipePos.set(0,0);
-    pipeRad = 0;
-
-    const hand_thick = armThick * Math.cos(PI/3.8);
-    const hand_width = armThick * Math.cos(PI/5);
-    const fing_thick = armThick / 3.5;
-
-    //thick
-    for(let i=0; i<node; i++){
-        let t = i * 1.0/(node-1);
-        upperArmThick[i] = armThick;
-        lowerArmThick[i] = armThick * Math.cos(Math.pow(t,2.5)*PI/3.8);
-        lowerArmWidth[i] = armThick * Math.cos(Math.pow(t,2.5)*PI/5);
-        handThick[i] = hand_thick * Math.cos(Math.pow(t,2.3)*PI/3);
-        handWidth[i] = hand_width * Math.cos(Math.pow(t,2.3)*PI/5);
-        fingThick[i] = fing_thick * Math.cos(Math.pow(t,2)*PI/2.6);
-    }
-
-    //make_palm
-    const handLength = armLength/5;
-    const hp = new THREE.Vector2( handLength,0 );
-    let hand_pt = makePipe(CLOSE, node, edge, hp, cp, handThick, handWidth);
-    let geoHand = makeGeometry(node+1, edge, hand_pt);
-    let geoHand_merg = mergeGeometry(geoHand);
-    let objHand = new THREE.Mesh(geoHand_merg, skinMat);
-    handGL.add(objHand);
-    //make_fingers
-    let objFing = new Array(numFing);
-    const fp = hp.multiplyScalar(0.99);
-    let fing_pt = makePipe(CLOSE, node, edge, fp, cp, fingThick, fingThick);
-    let geoFing = makeGeometry(node+1, edge, fing_pt);
-    let geoFing_merg = mergeGeometry(geoFing);
-    for(let i=0; i<numFing; i++){
-      objFing[i] = new THREE.Mesh(geoFing_merg, skinMat);
-      let angle = [-PI/6, -PI/18, PI/16, PI/5];
-      let z = handLength/0.7 * Math.sin(angle[i]);
-      let x = handLength/1.1 * Math.cos(angle[i]);
-      let pos = new THREE.Vector3(x, 0, z);
-      objFing[i].rotation.y = -angle[i];
-      objFing[i].position.set(pos.x, pos.y, pos.z);
-      handGL.add(objFing[i]);
-    }
-
-    //upper_arm_mapping
-    const bend1 = mapping(v1, -1.0, 2.0, PI/4, -PI/2);
-    const bend2 = mapping(v2, 0.01, 1.5, 0.0, -3*PI/4);
-    let {ep1, cp1, ep2, cp2} = getBezierpt(armLength, armLength2, bend1, bend2);
-    //upper_arm
-    let armu_pt = makePipe(OPEN, node, edge, ep1, cp1, upperArmThick, upperArmThick);
-    upperArmGeoL = makeGeometry(node, edge, armu_pt);
-    upperArmGeoL = mergeGeometry(upperArmGeoL);
-    objArmUprL = new THREE.Mesh(upperArmGeoL, bodyMat);
-
-
-    //joint
-    pipePos = ep1.multiplyScalar(0.99);
-    let armj_pt = makeJoint(node, edge, armThick, bend2);
-    jointArmGeoL = makeGeometry(node, edge, armj_pt);
-    jointArmGeoL = mergeGeometry(jointArmGeoL);
-    objArmJntL = new THREE.Mesh(jointArmGeoL, bodyMat);
-    //lower_arm
-    let arml_pt = makePipe(OPEN, node, edge, ep2, cp2, lowerArmThick, lowerArmWidth);
-    lowerArmGeoL = makeGeometry(node, edge, arml_pt);
-    lowerArmGeoL = mergeGeometry(lowerArmGeoL);
-    objArmLwrL = new THREE.Mesh(lowerArmGeoL, bodyMat);
-    //hand_pos
-    pipePos.add(ep2);
-    handGL.position.set(pipePos.x, pipePos.y, 0);
-    handGL.rotation.z = pipeRad;
-    //Grouping
-    armlGL.add(objArmJntL);
-    armlGL.add(objArmLwrL);
-    armlGL.add(handGL);
-    armGL.add(objArmUprL);
-    armGL.add(armlGL);
-    //rotation
-    let axis = new THREE.Vector3(Math.cos(bend1),Math.sin(bend1),0).normalize();
-    let angle = rot2;
-    let q = new THREE.Quaternion();
-    q.setFromAxisAngle(axis,angle);
-    armlGL.applyQuaternion(q);
-    armGL.rotation.x = rot1;
-    scene.add(armGL);
-  }
-
 
 
   function arm_init(){
     //defs
     const node = pipeNode;
     const edge = pipeEdge;
-    const hand_thick = armThick * Math.cos(PI/3.8);
-    const hand_width = armThick * Math.cos(PI/5);
-    const fing_thick = armThick / 4;
-
-    //pos reset
-    pipePos.set(0,0);
-    pipeRad = 0;
+    const hand_thick = armThick * Math.cos(PI/3.5);
+    const hand_width = armThick * Math.cos(PI/4.8);
+    const fing_thick = armThick / 4.5;
 
     //thick
     for(let i=0; i<node; i++){
@@ -888,7 +813,7 @@ function makeBody( lr_value, fb_value, tw_value ){
         lowerArmThick[i] = armThick * Math.cos(Math.pow(t,2.5)*PI/3.8);
         lowerArmWidth[i] = armThick * Math.cos(Math.pow(t,2.5)*PI/5);
         handThick[i] = hand_thick * Math.cos(Math.pow(t,1.0)*PI/3);
-        handWidth[i] = hand_width * Math.cos(Math.pow(t,2.0)*PI/5);
+        handWidth[i] = hand_width * Math.cos(Math.pow(t,1.0)*PI/5);
         fingThick[i] = fing_thick * Math.cos(Math.pow(t,1.0)*PI/2.5);
     }
 
@@ -902,7 +827,7 @@ function makeBody( lr_value, fb_value, tw_value ){
     handGL.add(objHand);
 
     //make fingers obj
-    const fp = hp.multiplyScalar(0.99);
+    const fp = hp.multiplyScalar(0.85);
     let fing_pt = makePipe(CLOSE, node, edge, fp, fp, fingThick, fingThick);
     let geoFing = makeGeometry(node+1, edge, fing_pt);
     geoFing = mergeGeometry(geoFing);
@@ -916,6 +841,7 @@ function makeBody( lr_value, fb_value, tw_value ){
       objFing.position.set(pos.x, pos.y, pos.z);
       handGL.add(objFing);
     }
+    handGR = handGL.clone();
 
     //meke upper arm
     let ep = new THREE.Vector2( armLength,0 );
@@ -928,8 +854,7 @@ function makeBody( lr_value, fb_value, tw_value ){
     let uarm_objR = new THREE.Mesh(upperArmGeoR, bodyMat);
 
     //joint
-    pipePos = ep.multiplyScalar(0.99);
-    let armj_pt = makeJoint(node, edge, armThick, 0.01);
+    let armj_pt = makeJoint(node, edge, armThick, -PI/100);
     jointArmGeoL = makeGeometry(node, edge, armj_pt);
     jointArmGeoL = mergeGeometry(jointArmGeoL);
     jointArmGeoR = jointArmGeoL.clone();
@@ -937,37 +862,36 @@ function makeBody( lr_value, fb_value, tw_value ){
     let jarm_objR = new THREE.Mesh(jointArmGeoR, bodyMat);
 
     //lower_arm
-    let arml_pt = makePipe(OPEN, node, edge, ep, cp, lowerArmThick, lowerArmWidth);
+    let ep2 = new THREE.Vector2( armLength2,0 );
+    let cp2 = new THREE.Vector2();
+    let arml_pt = makePipe(OPEN, node, edge, ep2, cp2, lowerArmThick, lowerArmWidth);
     lowerArmGeoL = makeGeometry(node, edge, arml_pt);
     lowerArmGeoL = mergeGeometry(lowerArmGeoL);
     lowerArmGeoR = lowerArmGeoL.clone();
     let larm_obj = new THREE.Mesh(lowerArmGeoL, bodyMat);
     let larm_objR = new THREE.Mesh(lowerArmGeoR, bodyMat);
 
-    //hand_pos
-    pipePos.add(ep);
-    handGL.position.set(pipePos.x, pipePos.y, 0);
-    handGR = handGL.clone();
-
     //GroupingL
     armGL.add(uarm_obj);
     armlGL.add(larm_obj);
-    armlGL.add(jarm_obj);
     armlGL.add(handGL);
-    armGL.add(armlGL);
+    armljGL.add(armlGL);
+    armljGL.add(jarm_obj);
+    armGL.add(armljGL);
 
     //GroupingR
     armGR.add(uarm_objR);
     armlGR.add(larm_objR);
-    armlGR.add(jarm_objR);
     armlGR.add(handGR);
-    armGR.add(armlGR);
+    armljGR.add(armlGR);
+    armljGR.add(jarm_objR);
+    armGR.add(armljGR);
 
     //scene.add
     scene.add(armGL);
     scene.add(armGR);
-    armGR.position.set(-50,0,0);
-    armGR.rotation.y = -PI;
+    //armGR.position.set(-50,0,0);
+    //armGR.rotation.y = -PI;
 
   }
 
@@ -977,11 +901,14 @@ function makeBody( lr_value, fb_value, tw_value ){
 
   function arm_update( side, v1, v2, rot1, rot2){
 
+    //clear
+    jointPos.set(0,0);
+    lowerPipePos.set(0,0);
+    pipeRad = 0;
+
     //defs
     let node = pipeNode;
     let edge = pipeEdge;
-    pipeRad = 0;
-    pipePos.set( 0,0 );
 
     //value mapping
     const bend1 = mapping(v1, -1.0, 2.0, PI/4, -PI/2);
@@ -992,6 +919,7 @@ function makeBody( lr_value, fb_value, tw_value ){
     let joint_geo = side ? jointArmGeoR : jointArmGeoL;
     let lower_geo = side ? lowerArmGeoR : lowerArmGeoL;
     let hand = side ? handGR : handGL;
+    let joint = side ? armljGR : armljGL;
     let lower_arm = side ? armlGR : armlGL;
     let arm = side ? armGR : armGL;
 
@@ -999,22 +927,26 @@ function makeBody( lr_value, fb_value, tw_value ){
     let uarm_pt = makePipe(OPEN, node, edge, ep1, cp1, upperArmThick, upperArmThick);
     updateGeometry(node, edge, uarm_pt, upper_geo);
 
-    pipePos = ep1.multiplyScalar(0.99);
     let jarm_pt = makeJoint(node, edge, armThick, bend2);
     updateGeometry(node, edge, jarm_pt, joint_geo);
+    joint.position.set(jointPos.x, jointPos.y, 0);
 
     let larm_pt = makePipe(OPEN, node, edge, ep2, cp2, lowerArmThick, lowerArmWidth);
     updateGeometry(node, edge, larm_pt, lower_geo);
+    lower_arm.position.set(lowerPipePos.x,lowerPipePos.y,0);
 
     //hand
-    pipePos.add(ep2);
-    hand.position.set(pipePos.x, pipePos.y, 0);
+    hand.position.set(ep2.x, ep2.y, 0);
     hand.rotation.z = pipeRad;
 
     //rotation
     let axis1 = new THREE.Vector3(1,0,0);
     let angle1 = rot1;
-    let axis2 = new THREE.Vector3(Math.cos(bend1),Math.sin(bend1),0).normalize();
+    let diff = Math.abs(bend1) * -Math.PI/8;
+    let bend = bend1 + diff;
+
+    let axis2 = new THREE.Vector3(Math.cos(bend),Math.sin(bend),0).normalize();
+
     let angle2 = rot2;
     let q1 = new THREE.Quaternion();
     let q2 = new THREE.Quaternion();
@@ -1070,12 +1002,13 @@ function makeBody( lr_value, fb_value, tw_value ){
     //bone
     let curve = new THREE.QuadraticBezierCurve(center,cp,ep);
     let bone = curve.getPoints( node-1 );
+    jointPos = curve.getPoint(0.96);
 
     //set points
     for(var i=0; i<node; i++){
       pt[i] = [];
-      bone[i].add(pipePos);
       if(i!=0){
+        //bone[i].add(pipePos);
         let diff = new THREE.Vector2();
         diff.subVectors(bone[i], zpos);
         rot = Math.atan2(diff.y, diff.x);
@@ -1107,56 +1040,19 @@ function makeBody( lr_value, fb_value, tw_value ){
 
 
 
-  function makePipe2(open, node, edge, ep, cp, h, w){
-    //defs
-   const center = new THREE.Vector2( 0,0 );
-   let zpos = new THREE.Vector2( 0,0 );
-   let pt = [];
-   let rot = 0;
-   //bone
-   let curve = new THREE.QuadraticBezierCurve(center,cp,ep);
-   let bone = curve.getPoints( node-1 );
-
-   let index = open ? node : node+1;
-   for(var i=0; i<index; i++){
-     pt[i] = [];
-     let t = i==node ? 1.0 : i * 1.0/(node-1);
-     let x = (2 * cp.x * t * (1-t)) + (ep.x * Math.pow(t,2));
-     let y = (2 * cp.y * t * (1-t)) + (ep.y * Math.pow(t,2));
-     //rot
-     if(i==0){rot=pipeRad;}
-     else if(i==index-1){rot=Math.atan2(ep.y, ep.x);}
-     else{rot = Math.atan2(y-zpos.y, x-zpos.x);}
-     if(i==node){w[i]=0; h[i]=0;}
-     zpos = new THREE.Vector2( x,y );
-     //set points
-     for(var j=0; j<edge; j++){
-       let z = w[i] * Math.cos(j*2*Math.PI/edge);
-       let v = new THREE.Vector2(0, h[i] * Math.sin(j*2*PI/edge));
-       v = v.rotateAround(center, rot);
-       pt[i][j] = [x+v.x+pipePos.x, y+v.y+pipePos.y, z];
-     }
-   }
-   pipeRad = rot;
-   return pt;
- }
-
 
 
 
   function makeJoint(node, edge, thick, rad){
     //defs
     let origin = new THREE.Vector2( 0,-thick );
-    let center = new THREE.Vector2( 0,thick );
-    origin.add(pipePos);
-    origin.rotateAround(pipePos, pipeRad);
-    center.add(origin);
-    center.rotateAround(origin, pipeRad);
+    let center = new THREE.Vector2();
+
     //set pt
     let pt = [];
     for(let i=0; i<node; i++){
       pt[i] = [];
-      let r = i==0 ? 0 : rad/(node-1);
+      let r = i==0 ? pipeRad : rad/(node-1);
       center.rotateAround(origin, r);
       for(let j=0; j<edge; j++){
         let theta = j*2*PI/edge;
@@ -1170,7 +1066,7 @@ function makeBody( lr_value, fb_value, tw_value ){
     }
     //update values
     pipeRad += rad;
-    pipePos = center;
+    lowerPipePos.add(center);
     return pt;
 }
 
