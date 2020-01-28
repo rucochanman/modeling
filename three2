@@ -144,6 +144,7 @@ function init() {
   let armlGR = new THREE.Group();
   let armGL = new THREE.Group();
   let armGR = new THREE.Group();
+  let armG = new THREE.Group();
   let headG = new THREE.Group();
 
 
@@ -156,19 +157,12 @@ function init() {
   //headG.rotation.y = -PI/8;
   arm_init();
 
-  arm_update(LEFT, 0.0, 1, 0, 0);
-  arm_update(RIGHT, 0.2, 1, 0, 0);
-  armGR.rotation.y = PI;
-  makeBody(0,0,0);
+  arm_update(LEFT, 0.0, 0, 0, 0); //-1-2, 0-1.5
+  arm_update(RIGHT, 0, 0, 0, 0);
+  //armGR.rotation.y = PI;
+  //makeBody(0,0,0); //-1-1, -1-1.5, -1,1
 
-  //arm_update(LEFT, 0.8, 0.0, 0, PI/2);
-  //arm_update(RIGHT, 0.0, 0.0, 0, PI/2);
 
-  //armGL.position.set(80,-1,0);
-  //maketest();
-  //makeBody(1, 0.0, 0.0);
-
-  //makej();
 
   let count = 0;
   let n = 0;
@@ -178,10 +172,8 @@ function init() {
 
 
 
-  //renderer.render(scene, camera);
   render();
 
-  //renderer.render(scene, camera);
 
 
   let angle = 0;
@@ -204,12 +196,12 @@ function init() {
         }
 
         //arm_update( LEFT, n*0.005, n*0.01, 0, 0);
-        //arm_update( RIGHT, -n*0.005, n*0.016, 0, 0);
+
 
         if(count%10==0){
           //count += 0.1;
           //n = 0.5;
-          //arm_update( LEFT, 0.1, 0.5, 0, PI/32);
+
           //console.log(n);
 
 
@@ -320,7 +312,7 @@ function makeBody( lr_value, fb_value, tw_value ){
         arm_posL = right.clone().multiplyScalar(width*0.85).add(bone[i]);
         arm_posR = left.clone().multiplyScalar(width*0.85).add(bone[i]);
 
-        console.log(right);
+
       }
 
       for(let j=0; j<seg; j++){
@@ -353,9 +345,17 @@ function makeBody( lr_value, fb_value, tw_value ){
   //head_pos
   const head_len = h + headSize/2;
   //headPos = ep.clone().normalize().multiplyScalar(head_len);
+  armGL.rotation.z = lr-PI/2;
+  armGR.rotation.z = -lr+PI/2;
+  armG.rotation.y = tw;
+  //armGR.rotation.y = tw;
+  console.log(tw);
+  armGL.rotation.x = fb-PI/2;
+  armGR.rotation.x = -fb+PI/2;
 
   armGL.position.set(arm_posL.x, arm_posL.y, arm_posL.z);
   armGR.position.set(arm_posR.x, arm_posR.y, arm_posR.z);
+
 
 
 }
@@ -871,27 +871,29 @@ function makeBody( lr_value, fb_value, tw_value ){
     let larm_obj = new THREE.Mesh(lowerArmGeoL, bodyMat);
     let larm_objR = new THREE.Mesh(lowerArmGeoR, bodyMat);
 
-    //GroupingL
+    //Grouping-L
     armGL.add(uarm_obj);
     armlGL.add(larm_obj);
     armlGL.add(handGL);
-    armljGL.add(armlGL);
     armljGL.add(jarm_obj);
+    armljGL.add(armlGL);
     armGL.add(armljGL);
 
-    //GroupingR
+    //Grouping-R
     armGR.add(uarm_objR);
     armlGR.add(larm_objR);
     armlGR.add(handGR);
     armljGR.add(armlGR);
     armljGR.add(jarm_objR);
     armGR.add(armljGR);
+    armGR.rotation.y = PI/8;
+
+    armG.add(armGR);
+    armG.add(armGL);
 
     //scene.add
-    scene.add(armGL);
-    scene.add(armGR);
-    //armGR.position.set(-50,0,0);
-    //armGR.rotation.y = -PI;
+    scene.add(armG);
+    //scene.add(armGR);
 
   }
 
@@ -929,7 +931,8 @@ function makeBody( lr_value, fb_value, tw_value ){
 
     let jarm_pt = makeJoint(node, edge, armThick, bend2);
     updateGeometry(node, edge, jarm_pt, joint_geo);
-    joint.position.set(jointPos.x, jointPos.y, 0);
+    joint.position.set(ep1.x, ep1.y, 0);
+
 
     let larm_pt = makePipe(OPEN, node, edge, ep2, cp2, lowerArmThick, lowerArmWidth);
     updateGeometry(node, edge, larm_pt, lower_geo);
@@ -1002,7 +1005,8 @@ function makeBody( lr_value, fb_value, tw_value ){
     //bone
     let curve = new THREE.QuadraticBezierCurve(center,cp,ep);
     let bone = curve.getPoints( node-1 );
-    jointPos = curve.getPoint(0.96);
+    //jointPos = curve.getPoint(0.95);
+    jointPos = bone[node-2];
 
     //set points
     for(var i=0; i<node; i++){
@@ -1046,13 +1050,17 @@ function makeBody( lr_value, fb_value, tw_value ){
   function makeJoint(node, edge, thick, rad){
     //defs
     let origin = new THREE.Vector2( 0,-thick );
-    let center = new THREE.Vector2();
+    let init = new THREE.Vector2();
+    origin.rotateAround(init, pipeRad);
+    let center = new THREE.Vector2( 0,thick);
+    center.add(origin);
+    center.rotateAround(origin, pipeRad);
 
     //set pt
     let pt = [];
     for(let i=0; i<node; i++){
       pt[i] = [];
-      let r = i==0 ? pipeRad : rad/(node-1);
+      let r = i==0 ? 0 : rad/(node-1);
       center.rotateAround(origin, r);
       for(let j=0; j<edge; j++){
         let theta = j*2*PI/edge;
