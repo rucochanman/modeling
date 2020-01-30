@@ -1,3 +1,5 @@
+
+
 // ページの読み込みを待つ
 window.addEventListener('load', init);
 
@@ -133,6 +135,7 @@ function init() {
   let jointArmGeoR;
   let lowerArmGeoL;
   let lowerArmGeoR;
+  let bodyGeo;
 
   //groups
   let handGL = new THREE.Group();
@@ -151,14 +154,14 @@ function init() {
   ///////////////////////////////////////inits
 
 
-  //headInit();
+  headInit();
 
   armInit();
   armUpdate(LEFT, 0,0,0,0); //-1-2, 0-1.5
   armUpdate(RIGHT,0,0,0,0);
 
   bodyInit();
-  //bodyUpdate(-1,0,0); //-1-1, -1-1.5, -1,1
+  bodyUpdate(1,0,0); //-1-1, -1-1.5, -1,1
 
 
 
@@ -215,7 +218,6 @@ function init() {
 
   function render(){
       requestAnimationFrame(render);
-      //armUpdate( LEFT, 1.5, 0.0, 0, PI/64);
       renderer.render(scene, camera);
   }
 
@@ -227,6 +229,7 @@ function init() {
     makeLines();
     hair_init();
     headG.rotation.x = PI/20;
+    bodyG.add(headG);
 
   }
 
@@ -246,25 +249,17 @@ function bodyInit(){
   const edge = bodyEdge;
   const h = bodyLength;
 
-  let pt = [];
-  let x, y, z;
-  let r = 10;
+  //thick
   for(let i=0;i<node;i++){
-    pt[i] = [];
     let t = i/(node-1);
     bodyWidths[i] = bodyWidth * Math.cos(Math.pow(t,1.8)*PI/5);
     bodyThicks[i] = bodyWidths[i] * 0.65;
-    y = t * h;
-    for(let j=0;j<edge;j++){
-      let theta = j * 2 * PI / edge;
-      x = r * Math.cos(theta);
-      z = r * Math.sin(theta);
-      pt[i][j] = [x,y,z];
-    }
   }
 
-  let geo = makeGeometry(node, edge, pt);
-  geo = mergeGeometry(geo);
+  pipeRad = PI/2;
+  const ep = new THREE.Vector2( 0, h );
+  let pt = makePipe(OPEN, node, edge, ep, ep, bodyWidths, bodyThicks);
+  bodyGeo = makeGeometry(node, edge, pt);
 
   //uvmap
   let uvmap = [];
@@ -276,56 +271,47 @@ function bodyInit(){
       uvmap[i][j] = [x, y];
     }
   }
-  //let uvs = setUvs(node, edge, uvmap);
-  //geo.addAttribute('uv', new THREE.BufferAttribute(uvs, 2) );
-  //geo = mergeGeometry(geo);
+  let uvs = setUvs(node, edge, uvmap);
+  bodyGeo.addAttribute('uv', new THREE.BufferAttribute(uvs, 2) );
+  bodyGeo = mergeGeometry(bodyGeo);
 
   //material
   const loader = new THREE.TextureLoader();
   const texture = loader.load('img/torso.png');
   let mat = uvMat.clone();
   mat.uniforms.uTexture.value = texture;
-
-  let obj = new THREE.Mesh(geo, bodyMat);
-
-  //bodyG.add(obj);
-  //scene.add(bodyG);
-  scene.add(obj);
+  let obj = new THREE.Mesh(bodyGeo, mat);
 
   makeHip();
 
-  //bodyG.add(obj);
+  bodyG.add(obj);
+  scene.add(bodyG);
 }
 
 function makeHip(){
-
   //defs
-  pipeRad = 0;
+  pipeRad = -PI/2;
   const node = Math.floor(bodyNode/2);
   const edge = bodyEdge;
-  const h = bodyLength/2;
+  const h = bodyLength/2.2;
   const width = new Array(node);
   const thick = new Array(node);
 
   //thick
   for(let i=0;i<node;i++){
     let t = i / (node-1);
-    width[i] = bodyWidth * Math.cos(Math.pow(t,1.8)*PI/3);
+    width[i] = bodyWidth * Math.cos(Math.pow(t,2)*PI/2.8);
     thick[i] = width[i] * 0.65;
   }
 
   //make obj
-  const ep = new THREE.Vector2( h, 0 );
-  const cp = new THREE.Vector2( h/2, 0 );
-  let pt = makePipe(CLOSE, node, edge, ep, cp, thick, width);
-  //console.log(pt[0][0]);
+  const ep = new THREE.Vector2( 0, -h );
+  let pt = makePipe(CLOSE, node, edge, ep, ep, width, thick);
   let geo = makeGeometry(node+1, edge, pt);
   geo = mergeGeometry(geo);
   let obj = new THREE.Mesh(geo, bodyMat);
-  scene.add(obj);
-  obj.rotation.z = -PI/2;
-  obj.position.y = 1;
-  //bodyG.add(obj);
+  //scene.add(obj);
+  bodyG.add(obj);
 }
 
 
@@ -345,7 +331,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
   //value mapping
   const lr = mapping(lr_value, -1, 1, 3*PI/4, PI/4);
   const fb = mapping(fb_value, -1, 1.5, 3*PI/4, PI/8);
-  const tw = mapping(tw_value, -1, 1, PI/2, -PI/2);
+  const tw = mapping(tw_value, -1, 1, PI/4, -PI/4);
 
   //calc bone
   const x = h * Math.cos(lr);
@@ -373,12 +359,12 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
       //body width
       let width = bodyWidths[i];
       let thick = bodyThicks[i];
-
+      let y = i==0 ? new THREE.Vector3() : bone[i];
+      //arm pos
       if(i==arm_node){
-        arm_posL = right.clone().multiplyScalar(width*0.85).add(bone[i]);
-        arm_posR = left.clone().multiplyScalar(width*0.85).add(bone[i]);
+        arm_posL = right.clone().multiplyScalar(width*0.8).add(y);
+        arm_posR = left.clone().multiplyScalar(width*0.8).add(y);
       }
-
       for(let j=0; j<seg; j++){
         //defs
         let div = j * 1.0 / seg;
@@ -392,48 +378,31 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
         let back_right = front_left.clone().negate();
         let right_front = left_back.clone().negate();
         //set points
-        pt[i][j+0*seg] = front_left.multiplyScalar(s2).add(bone[i]).toArray();
-        pt[i][j+1*seg] = left_back.multiplyScalar(s1).add(bone[i]).toArray();
-        pt[i][j+2*seg] = back_right.multiplyScalar(s2).add(bone[i]).toArray();
-        pt[i][j+3*seg] = right_front.multiplyScalar(s1).add(bone[i]).toArray();
+        pt[i][j+0*seg] = front_left.multiplyScalar(s2).add(y).toArray();
+        pt[i][j+1*seg] = left_back.multiplyScalar(s1).add(y).toArray();
+        pt[i][j+2*seg] = back_right.multiplyScalar(s2).add(y).toArray();
+        pt[i][j+3*seg] = right_front.multiplyScalar(s1).add(y).toArray();
       }
   }
-  let geo = makeGeometry(node, edge, pt);
-
-  //uvmap
-  let uvmap = [];
-  for(let i=0; i<node; i++){
-    uvmap[i] = [];
-    let y = i/(node-1);
-    for(let j=0; j<edge+1; j++){
-      let x = j/edge;
-      uvmap[i][j] = [x, y];
-    }
-  }
-  let uvs = setUvs(node, edge, uvmap);
-  geo.addAttribute('uv', new THREE.BufferAttribute(uvs, 2) );
-  geo = mergeGeometry(geo);
-
-  //material
-  const loader = new THREE.TextureLoader();
-  const texture = loader.load('img/torso.png');
-  let mat = uvMat.clone();
-  mat.uniforms.uTexture.value = texture;
-
-  let obj = new THREE.Mesh(geo, mat);
-  scene.add(obj);
+  updateGeometry(node, edge, pt, bodyGeo);
 
   //head_pos
   const head_len = h + headSize/2.1;
   let head_pos = ep.clone().normalize().multiplyScalar(head_len);
   headG.position.set(head_pos.x, head_pos.y, head_pos.z);
   headG.rotation.z = lr - PI/2;
+  headG.rotation.x = PI/2 - fb;
+  headG.rotation.y = -tw;
 
+  //arm_pos
   armGL.position.set(arm_posL.x, arm_posL.y, arm_posL.z);
   armGR.position.set(arm_posR.x, arm_posR.y, arm_posR.z);
-  armGL.rotation.z = lr - PI/2;
-  armGR.rotation.z = -lr + PI/2;
-
+  armGL.rotation.z += lr - PI/2;
+  armGR.rotation.z -= lr - PI/2;
+  armGL.rotation.y -= tw;
+  armGR.rotation.y -= tw;
+  armGL.rotation.x += fb - PI/2;
+  armGR.rotation.x += fb - PI/2;
 }
 
 
@@ -485,7 +454,8 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     //scene_add
     let obj = new THREE.Mesh(geo_merg, mat);
     headG.add(obj);
-    scene.add(headG);
+
+    //scene.add(headG);
   }
 
 
@@ -892,9 +862,9 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
         upperArmThick[i] = armThick;
         lowerArmThick[i] = armThick * Math.cos(Math.pow(t,2.5)*PI/3.8);
         lowerArmWidth[i] = armThick * Math.cos(Math.pow(t,2.5)*PI/5);
-        handThick[i] = hand_thick * Math.cos(Math.pow(t,1.0)*PI/3);
-        handWidth[i] = hand_width * Math.cos(Math.pow(t,1.0)*PI/5);
-        fingThick[i] = fing_thick * Math.cos(Math.pow(t,1.0)*PI/2.5);
+        handThick[i] = hand_thick * Math.cos(t*PI/3);
+        handWidth[i] = hand_width * Math.cos(t*PI/5);
+        fingThick[i] = fing_thick * Math.cos(t*PI/2.5);
     }
 
     //make hand obj
@@ -969,9 +939,10 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
 
     armG.add(armGR);
     armG.add(armGL);
+    bodyG.add(armG);
 
     //scene.add
-    scene.add(armG);
+    //scene.add(armG);
     //scene.add(armGR);
 
   }
@@ -993,7 +964,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     //value mapping
     const bend1 = mapping(v1, -1.0, 2.0, PI/4, -PI/2);
     const bend2 = mapping(v2, 0.001, 1.5, 0.0, -3*PI/4);
-    let {ep1, cp1, ep2, cp2} = getBezierpt(armLength, armLength2, bend1, bend2);
+    let {ep1, cp1, ep2, cp2} = getBezierPt(armLength, armLength2, bend1, bend2);
 
     let upper_geo = side ? upperArmGeoR : upperArmGeoL;
     let joint_geo = side ? jointArmGeoR : jointArmGeoL;
@@ -1022,17 +993,15 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
 
     //rotation
     let axis1 = new THREE.Vector3(1,0,0);
-    let angle1 = rot1;
     let diff = Math.abs(bend1) * -Math.PI/8;
     let bend = bend1 + bend2 + diff;
-
-    let axis2 = new THREE.Vector3(Math.cos(bend),Math.sin(bend),0).normalize();
-
+    let axis2 = new THREE.Vector3(Math.cos(bend),Math.sin(bend),0);
+    axis2.normalize();
     let angle2 = rot2;
     let q1 = new THREE.Quaternion();
     let q2 = new THREE.Quaternion();
-    q1.setFromAxisAngle(axis1,angle1);
-    q2.setFromAxisAngle(axis2,angle2);
+    q1.setFromAxisAngle(axis1,rot1);
+    q2.setFromAxisAngle(axis2,rot2);
     lower_arm.applyQuaternion(q2);
     arm.applyQuaternion(q1);
     arm.rotation.y = rot;
@@ -1040,7 +1009,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
   }
 
 
-  function getBezierpt(len1, len2, bend1, bend2){
+  function getBezierPt(len1, len2, bend1, bend2){
     //angle adjust
     let diff = Math.abs(bend1) * -Math.PI/8;
     let rad = bend1 + bend2 + diff;
@@ -1088,7 +1057,6 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     for(var i=0; i<node; i++){
       pt[i] = [];
       if(i!=0){
-        //bone[i].add(pipePos);
         let diff = new THREE.Vector2();
         diff.subVectors(bone[i], zpos);
         rot = Math.atan2(diff.y, diff.x);
