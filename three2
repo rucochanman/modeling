@@ -23,7 +23,7 @@ function init() {
 
   // カメラを作成
   let camera = new THREE.PerspectiveCamera(45, width / height);
-  camera.position.set(0, 0, 300);
+  camera.position.set(-300, 0, 0);
   camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   //ライト
@@ -149,16 +149,17 @@ function init() {
   ///////////////////////////////////////inits
 
 
-  headInit();
+  //headInit();
 
   armInit();
-  armUpdate(LEFT, 0.5,0.0,0,0); //-1-2, 0-1.5
-  armUpdate(RIGHT, 0.5,0,0,0);
-
+  armUpdate(LEFT, 0.0,0.0,0,0); //-1-2, 0-1.5
+  armUpdate(RIGHT, 0.0,0,0,0);
+  //scene.add(armG);
+  //armG.rotation.z = 0;
   bodyInit();
-  bodyUpdate(1,0,0); //-1-1, -1-1.5, -1,1
+  bodyUpdate(0,0,0); //-1-1, -1-1.5, -1,1
 
-  bodyG.position.y = -100;
+  //bodyG.position.y = -100;
   //blink(OPEN);
 
 
@@ -238,6 +239,10 @@ function bodyInit(){
   pipeRad = PI/2;
   const ep = new THREE.Vector2( 0, h );
   let pt = makePipe(OPEN, node, edge, ep, ep, bodyWidths, bodyThicks);
+  console.log(pt[0][0]);
+  console.log(pt[0][1]);
+    console.log(pt[0][2]);
+      console.log(pt[0][3]);
   bodyGeo = makeGeometry(node, edge, pt);
 
   //uvmap
@@ -324,6 +329,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
   let curve = new THREE.QuadraticBezierCurve3(center,cp,ep);
   let bone = curve.getPoints( node-1 );
   bone[0] = new THREE.Vector3(0,1,0);
+    console.log(bodyThicks[0]);
 
   //set points
   let pt = [];
@@ -363,8 +369,15 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
         pt[i][j+1*seg] = left_back.multiplyScalar(s1).add(y).toArray();
         pt[i][j+2*seg] = back_right.multiplyScalar(s2).add(y).toArray();
         pt[i][j+3*seg] = right_front.multiplyScalar(s1).add(y).toArray();
+
+        //console.log(pt[0][j]);
       }
   }
+
+  console.log(pt[0][0]);
+  console.log(pt[0][1]);
+    console.log(pt[0][2]);
+      console.log(pt[0][3]);
   updateGeometry(node, edge, pt, bodyGeo);
 
   //head_pos
@@ -380,11 +393,9 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
   armGR.position.set(arm_posR.x, arm_posR.y, arm_posR.z);
   armGL.rotation.z = lr - PI/2;
   armGR.rotation.z = PI/2 - lr;
-  //armG.rotation.y
-  armGL.rotation.y -= tw;
-  armGR.rotation.y -= tw;
-  armGL.rotation.x += fb - PI/2;
-  armGR.rotation.x += fb - PI/2;
+  armG.rotation.x = fb - PI/2;
+  armGL.rotation.y = -tw;
+  armGR.rotation.y = PI - tw;
 }
 
 
