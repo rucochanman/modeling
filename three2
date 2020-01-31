@@ -1,5 +1,3 @@
-
-
 // ページの読み込みを待つ
 window.addEventListener('load', init);
 
@@ -30,10 +28,10 @@ function init() {
 
   //ライト
   const light = new THREE.DirectionalLight( 0xffffff );
-  light.position.set( -5, -25, 150 );
+  light.position.set( -100, 120, 280 );
   scene.add( light );
 
-  const envlight = new THREE.AmbientLight(0xFFFFFF, 0.7);
+  const envlight = new THREE.AmbientLight(0xff0000, 1);
   scene.add(envlight);
 
 
@@ -85,48 +83,43 @@ function init() {
   const stripeCol = new THREE.Color(0xcb9b8f);
 
   //materials
-  let monocUniform =
-    THREE.UniformsUtils.merge( [THREE.UniformsLib['lights'],{
-        'uColor': { value: null }}] );
+  const mono_vert = document.getElementById('vs_mono').textContent;
+  const mono_frag = document.getElementById('fs_mono').textContent;
+  const uv_vert = document.getElementById('vs_bi').textContent;
+  const uv_frag = document.getElementById('fs_uv').textContent;
+  const bi_frag = document.getElementById('fs_bi').textContent;
 
-  let monoCMat = new THREE.ShaderMaterial({
+  let uniform = THREE.UniformsUtils.merge([
+    THREE.UniformsLib['ambient'],
+    THREE.UniformsLib['lights'],{
+    'uTexture': { value: null },
+    'uColor1': { value: null },
+    'uColor2': { value: null }}
+  ] );
+
+  let material = new THREE.ShaderMaterial({
     side:THREE.DoubleSide,
-    uniforms: monocUniform,
-    vertexShader: document.getElementById('vs_mono').textContent,
-    fragmentShader: document.getElementById('fs_mono').textContent,
+    uniforms: uniform,
+    vertexShader: null,
+    fragmentShader: null,
     lights: true
   });
 
-  let skinMat = monoCMat.clone();
-  skinMat.uniforms.uColor.value = skinCol;
+  let skinMat = material.clone();
+  skinMat.vertexShader = mono_vert;
+  skinMat.fragmentShader = mono_frag;
+  skinMat.uniforms.uColor1.value = skinCol;
 
-  let bodyMat = monoCMat.clone();
-  bodyMat.uniforms.uColor.value = bodyCol;
+  let bodyMat = material.clone();
+  bodyMat.vertexShader = mono_vert;
+  bodyMat.fragmentShader = mono_frag;
+  bodyMat.uniforms.uColor1.value = bodyCol;
 
-  let mulCUniform =
-    THREE.UniformsUtils.merge( [THREE.UniformsLib['lights'],{
-        'uTexture': { value: null },
-        'uColor1': { value: null },
-        'uColor2': { value: null }}
-      ] );
+  let eyeMat = material.clone();
+  const loader = new THREE.TextureLoader();
+  const eyeTex1 = loader.load('img/eye_open.png');
+  const eyeTex2 = loader.load('img/eye_close.png');
 
-  let mulCMat = new THREE.ShaderMaterial({
-    side:THREE.DoubleSide,
-    uniforms: mulCUniform,
-    vertexShader: document.getElementById('vs_bi').textContent,
-    fragmentShader: document.getElementById('fs_bi').textContent,
-    lights: true
-  });
-
-  let eyeMat = mulCMat.clone();
-
-  let uvMat = new THREE.ShaderMaterial({
-    side:THREE.DoubleSide,
-    uniforms: mulCUniform,
-    vertexShader: document.getElementById('vs_uv').textContent,
-    fragmentShader: document.getElementById('fs_uv').textContent,
-    lights: true
-  });
 
   //geometry
   let upperArmGeoL;
@@ -136,6 +129,8 @@ function init() {
   let lowerArmGeoL;
   let lowerArmGeoR;
   let bodyGeo;
+
+  let eyelashObj;
 
   //groups
   let handGL = new THREE.Group();
@@ -157,63 +152,47 @@ function init() {
   headInit();
 
   armInit();
-  armUpdate(LEFT, 0,0,0,0); //-1-2, 0-1.5
-  armUpdate(RIGHT,0,0,0,0);
+  armUpdate(LEFT, 0.5,0.0,0,0); //-1-2, 0-1.5
+  armUpdate(RIGHT, 0.5,0,0,0);
 
   bodyInit();
   bodyUpdate(1,0,0); //-1-1, -1-1.5, -1,1
 
+  bodyG.position.y = -100;
+  //blink(OPEN);
 
 
-  let count = 0;
   let n = 0;
-  let n2 = 0;
-  let flag = false;
+  let ot = 0;
+  let bt = 0;
+  let eye = OPEN;
   //animate();
-
-
-
   render();
 
-
-
-  let angle = 0;
-  let bend = 0;
-
-
   function animate(){
-        //count += 1;
-        if(n>-1){
-          flag = true;
-        }else if(n>1){
-          flag = false;
-          //console.log(flag);
+        n += 0.05;
+        ot += 1;
+        let v = Math.sin(n);
+        if(ot==150){
+          eye = CLOSE;
+          blink(eye);
+          ot = 0;
         }
-        if(flag){
-          n += 1/50;
-        }else{
-          n -= 1/50;
-          }
-        bodyUpdate(n, 0, 0);
-        console.log(n);
-
-        //armUpdate( LEFT, n*0.005, n*0.01, 0, 0);
-
-
-        if(count%10==0){
-          //count += 0.1;
-          //n = 0.5;
-
-          //console.log(n);
-
-
+        if(eye==CLOSE){
+          bt += 1;
         }
-          renderer.render( scene, camera );
+        if(bt>8){
+          eye = OPEN;
+          blink(eye);
+          bt = 0;
+        }
+
+        bodyUpdate(Math.sin(n), 0, 0);
+
+        renderer.render( scene, camera );
         requestAnimationFrame( animate );
 
   }
-  //animate();
-
 
 
   function render(){
@@ -276,9 +255,10 @@ function bodyInit(){
   bodyGeo = mergeGeometry(bodyGeo);
 
   //material
-  const loader = new THREE.TextureLoader();
   const texture = loader.load('img/torso.png');
-  let mat = uvMat.clone();
+  let mat = material.clone();
+  mat.vertexShader = uv_vert;
+  mat.fragmentShader = uv_frag;
   mat.uniforms.uTexture.value = texture;
   let obj = new THREE.Mesh(bodyGeo, mat);
 
@@ -287,6 +267,7 @@ function bodyInit(){
   bodyG.add(obj);
   scene.add(bodyG);
 }
+
 
 function makeHip(){
   //defs
@@ -367,7 +348,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
       }
       for(let j=0; j<seg; j++){
         //defs
-        let div = j * 1.0 / seg;
+        let div = j / seg;
         let d1 = div * PI/2;
         let d2 = PI/2 - d1;
         let s1 = new THREE.Vector2(thick*Math.sin(d1), width*Math.cos(d1)).length();
@@ -397,8 +378,9 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
   //arm_pos
   armGL.position.set(arm_posL.x, arm_posL.y, arm_posL.z);
   armGR.position.set(arm_posR.x, arm_posR.y, arm_posR.z);
-  armGL.rotation.z += lr - PI/2;
-  armGR.rotation.z -= lr - PI/2;
+  armGL.rotation.z = lr - PI/2;
+  armGR.rotation.z = PI/2 - lr;
+  //armG.rotation.y
   armGL.rotation.y -= tw;
   armGR.rotation.y -= tw;
   armGL.rotation.x += fb - PI/2;
@@ -416,9 +398,10 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     const edge = headEdge;
 
     //material
-    const loader = new THREE.TextureLoader();
     const texture = loader.load('img/hair.png');
-    let mat = mulCMat.clone();
+    let mat = material.clone();
+    mat.vertexShader = uv_vert;
+    mat.fragmentShader = bi_frag;
     mat.uniforms.uColor1.value = skinCol;
     mat.uniforms.uColor2.value = hairCol;
     mat.uniforms.uTexture.value = texture;
@@ -454,8 +437,6 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     //scene_add
     let obj = new THREE.Mesh(geo_merg, mat);
     headG.add(obj);
-
-    //scene.add(headG);
   }
 
 
@@ -465,14 +446,6 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     const edge = 3 * reso;
     const size = headSize/5.8;
     const base = size/3.2;
-
-    //material
-    const loader = new THREE.TextureLoader();
-    const texture = loader.load('img/eye.png');
-    let mat = mulCMat.clone();
-    mat.uniforms.uColor1.value = highCol;
-    mat.uniforms.uColor2.value = eyeCol;
-    mat.uniforms.uTexture.value = texture;
 
     //geometry
     let pt = [];
@@ -506,6 +479,13 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     geo.addAttribute('uv', new THREE.BufferAttribute(uvs, 2) );
     let geo_merg = mergeGeometry(geo);
 
+    //materials
+    eyeMat.vertexShader = uv_vert;
+    eyeMat.fragmentShader = bi_frag;
+    eyeMat.uniforms.uColor1.value = highCol;
+    eyeMat.uniforms.uColor2.value = eyeCol;
+    eyeMat.uniforms.uTexture.value = eyeTex1;
+
     //position
     const posL = headPtCal(0.5, 0.16);
     const posR = headPtCal(0.5, -0.16);
@@ -514,7 +494,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     for(let i=0; i<2; i++){
       let sPos = new THREE.Vector3(pos[i][0], pos[i][1], pos[i][2]);
       sPos.z *= 0.91;
-      let obj = new THREE.Mesh(geo_merg, mat);
+      let obj = new THREE.Mesh(geo_merg, eyeMat);
       obj.position.set(sPos.x, sPos.y, sPos.z);
       obj.rotation.x = -PI/12;
       obj.rotation.y = roty[i];
@@ -523,7 +503,6 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
   }
 
   function makeEar(){
-
     //defs
     const edge = 8;
     const node = 6;
@@ -714,8 +693,10 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
       zpos = pos;
     }
 
-    let mat = monoCMat.clone();
-    mat.uniforms.uColor.value = hairCol;
+    let mat = material.clone();
+    mat.vertexShader = mono_vert;
+    mat.fragmentShader = mono_frag;
+    mat.uniforms.uColor1.value = hairCol;
 
     let geo = makeGeometry(node, edge, pt);
     let geo_merg = mergeGeometry(geo);
@@ -731,8 +712,9 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
 
 
   function makeLines(){
-
-    const mat = new THREE.LineBasicMaterial({color: 0x000000, linewidth: 4});
+    const line_width = headSize/30;
+    const mat = new THREE.LineBasicMaterial({
+      color: 0x000000, linewidth: line_width});
 
     const mo_w = 0.02;
     const mo_h = mo_w * 0.9;
@@ -753,23 +735,24 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
 
 
     /////eye_lash
-    const el_r = headSize/20;
-    const elPosL = headPtCal(0.36, 0.12);
-    const elPosR = headPtCal(0.36, -0.22);
-    const el_y = el_r * Math.sin(PI/4);
-    const el_x = el_r * Math.cos(PI/4);
-    let elGeoL = new THREE.Geometry();
-    let elGeoR = new THREE.Geometry();
+    const posL = headPtCal(0.36, 0.12);
+    const posR = headPtCal(0.36, -0.22);
+    const len = headSize/20;
+    const center = new THREE.Vector3();
+    const ep = new THREE.Vector3(-len, len, 0);
+    let lash_geoL = new THREE.Geometry();
+    lash_geoL.vertices.push(center);
+    lash_geoL.vertices.push(ep);
+    let lash_objL = new THREE.Line( lash_geoL, mat );
+    let lash_objR = lash_objL.clone();
+    lash_objL.position.set(posL[0], posL[1], posL[2]);
+    lash_objR.position.set(posR[0], posR[1], posR[2]);
+    let lashes = new THREE.Group();
+    lashes.add(lash_objL);
+    lashes.add(lash_objR);
+    eyelashObj = lashes;
+    headG.add(lashes);
 
-    elGeoL.vertices.push(new THREE.Vector3( elPosL[0], elPosL[1], elPosL[2]) );
-    elGeoL.vertices.push(new THREE.Vector3( elPosL[0]-el_x, elPosL[1]+el_y, elPosL[2]) );
-    elGeoR.vertices.push(new THREE.Vector3( elPosR[0], elPosR[1], elPosR[2]) );
-    elGeoR.vertices.push(new THREE.Vector3( elPosR[0]-el_x, elPosR[1]+el_y, elPosR[2]) );
-
-    const elObjL = new THREE.Line( elGeoL, mat );
-    const elObjR = new THREE.Line( elGeoR, mat );
-    headG.add( elObjL );
-    headG.add( elObjR );
 
     ////eye_brown
     let ebPt1L = headPtCal(0.22, -0.14);
@@ -881,15 +864,16 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     let fing_pt = makePipe(CLOSE, node, edge, fp, fp, fingThick, fingThick);
     let geoFing = makeGeometry(node+1, edge, fing_pt);
     geoFing = mergeGeometry(geoFing);
+    let obj_fing = new THREE.Mesh(geoFing, skinMat);
     for(let i=0; i<numFing; i++){
-      let objFing = new THREE.Mesh(geoFing, skinMat);
+      let obj = obj_fing.clone();
       let angle = [-PI/6, -PI/18, PI/16, PI/5];
       let z = hand_len/0.7 * Math.sin(angle[i]);
       let x = hand_len/1.1 * Math.cos(angle[i]);
       let pos = new THREE.Vector3(x, 0, z);
-      objFing.rotation.y = -angle[i];
-      objFing.position.set(pos.x, pos.y, pos.z);
-      handGL.add(objFing);
+      obj.rotation.y = -angle[i];
+      obj.position.set(pos.x, pos.y, pos.z);
+      handGL.add(obj);
     }
     handGR = handGL.clone();
 
@@ -940,11 +924,6 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     armG.add(armGR);
     armG.add(armGL);
     bodyG.add(armG);
-
-    //scene.add
-    //scene.add(armG);
-    //scene.add(armGR);
-
   }
 
 
@@ -1005,8 +984,8 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     lower_arm.applyQuaternion(q2);
     arm.applyQuaternion(q1);
     arm.rotation.y = rot;
-
   }
+
 
 
   function getBezierPt(len1, len2, bend1, bend2){
@@ -1030,7 +1009,13 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
   }
 
 
-
+function blink(open){
+  let tex = open ? eyeTex1 : eyeTex2;
+  let col = open ? highCol : skinCol;
+  eyeMat.uniforms.uTexture.value = tex;
+  eyeMat.uniforms.uColor1.value = col;
+  eyelashObj.visible = open;
+}
 
 
 
