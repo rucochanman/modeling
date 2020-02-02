@@ -31,7 +31,9 @@ function init() {
   light.position.set( -100, 120, 280 );
   scene.add( light );
 
-  const envlight = new THREE.AmbientLight(0xff0000, 1);
+
+  let ambLight = 1;
+  const envlight = new THREE.AmbientLight(0xffffff, 1);
   scene.add(envlight);
 
 
@@ -85,16 +87,16 @@ function init() {
   //materials
   const mono_vert = document.getElementById('vs_mono').textContent;
   const mono_frag = document.getElementById('fs_mono').textContent;
-  const uv_vert = document.getElementById('vs_bi').textContent;
+  const uv_vert = document.getElementById('vs_uv').textContent;
   const uv_frag = document.getElementById('fs_uv').textContent;
   const bi_frag = document.getElementById('fs_bi').textContent;
 
   let uniform = THREE.UniformsUtils.merge([
-    THREE.UniformsLib['ambient'],
     THREE.UniformsLib['lights'],{
     'uTexture': { value: null },
     'uColor1': { value: null },
-    'uColor2': { value: null }}
+    'uColor2': { value: null },
+    'uAmbient': { vale: ambLight}}
   ] );
 
   let material = new THREE.ShaderMaterial({
@@ -114,6 +116,11 @@ function init() {
   bodyMat.vertexShader = mono_vert;
   bodyMat.fragmentShader = mono_frag;
   bodyMat.uniforms.uColor1.value = bodyCol;
+
+  let hairMat = material.clone();
+  hairMat.vertexShader = mono_vert;
+  hairMat.fragmentShader = mono_frag;
+  hairMat.uniforms.uColor1.value = hairCol;
 
   let eyeMat = material.clone();
   const loader = new THREE.TextureLoader();
@@ -149,15 +156,16 @@ function init() {
   ///////////////////////////////////////inits
 
 
-  //headInit();
+  headInit();
+  scene.add(headG);
 
   armInit();
   armUpdate(LEFT, 0.0,0.0,0,0); //-1-2, 0-1.5
   armUpdate(RIGHT, 0.0,0,0,0);
-  //scene.add(armG);
-  //armG.rotation.z = 0;
-  bodyInit();
-  bodyUpdate(0,0,0); //-1-1, -1-1.5, -1,1
+
+  //bodyInit();
+  //bodyUpdate(0,0,0); //-1-1, -1-1.5, -1,1
+  makeCylinder();
 
   //bodyG.position.y = -100;
   //blink(OPEN);
@@ -218,12 +226,50 @@ function init() {
 
 
 
+
+function makeCylinder(){
+  let size = headSize/6.4;
+  let thick = size/7.5;
+  let node = headNode;
+  let edge = headEdge;
+  let geo = new THREE.CylinderGeometry( size, size, thick, edge );
+  const material = new THREE.MeshPhongMaterial({
+   color: 0x151111,
+   opacity: 0.8,
+   transparent: true,
+ });
+  let glassR = new THREE.Mesh( geo, material );
+  glassR.rotation.x = PI/2.1;
+  let glassL = glassR.clone();
+  let posR = headPtCal(0.48,-0.158);
+  let posL = headPtCal(0.48,0.158);
+  let z = posR[2]*1.2;
+
+  glassR.position.set(posR[0], posR[1], z);
+  glassL.position.set(posL[0], posL[1], z);
+
+  let len = size / 1.7;
+  let size2 = thick / 1.5;
+  let geo2 = new THREE.CylinderGeometry( size2, size2, len, edge );
+  const material2 = new THREE.MeshLambertMaterial({color: 0x393939});
+  let bridge = new THREE.Mesh( geo2, material2 );
+  bridge.rotation.z = PI/2;
+  bridge.position.set(0,posR[1],z);
+  let glassG = new THREE.Group();
+  glassG.add(glassL);
+  glassG.add(glassR);
+  glassG.add(bridge);
+  headG.add(glassG);
+}
+
+
+
+
 ///////body
 
 
 
 function bodyInit(){
-
   //defs
   const node = bodyNode;
   const edge = bodyEdge;
@@ -239,10 +285,6 @@ function bodyInit(){
   pipeRad = PI/2;
   const ep = new THREE.Vector2( 0, h );
   let pt = makePipe(OPEN, node, edge, ep, ep, bodyWidths, bodyThicks);
-  console.log(pt[0][0]);
-  console.log(pt[0][1]);
-    console.log(pt[0][2]);
-      console.log(pt[0][3]);
   bodyGeo = makeGeometry(node, edge, pt);
 
   //uvmap
@@ -329,7 +371,6 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
   let curve = new THREE.QuadraticBezierCurve3(center,cp,ep);
   let bone = curve.getPoints( node-1 );
   bone[0] = new THREE.Vector3(0,1,0);
-    console.log(bodyThicks[0]);
 
   //set points
   let pt = [];
@@ -357,27 +398,23 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
         let div = j / seg;
         let d1 = div * PI/2;
         let d2 = PI/2 - d1;
-        let s1 = new THREE.Vector2(thick*Math.sin(d1), width*Math.cos(d1)).length();
-        let s2 = new THREE.Vector2(thick*Math.sin(d2), width*Math.cos(d2)).length();
+        //radius
+        let r1 = Math.pow(Math.cos(d1)/width,2) + Math.pow(Math.sin(d1)/thick,2);
+        r1 = Math.sqrt(1/r1);
+        let r2 = Math.pow(Math.cos(d2)/width,2) + Math.pow(Math.sin(d2)/thick,2);
+        r2 = Math.sqrt(1/r2);
         //units
         let front_left = front.clone().lerp(left,div).normalize();
         let left_back = left.clone().lerp(back,div).normalize();
         let back_right = front_left.clone().negate();
         let right_front = left_back.clone().negate();
         //set points
-        pt[i][j+0*seg] = front_left.multiplyScalar(s2).add(y).toArray();
-        pt[i][j+1*seg] = left_back.multiplyScalar(s1).add(y).toArray();
-        pt[i][j+2*seg] = back_right.multiplyScalar(s2).add(y).toArray();
-        pt[i][j+3*seg] = right_front.multiplyScalar(s1).add(y).toArray();
-
-        //console.log(pt[0][j]);
+        pt[i][j+0*seg] = front_left.multiplyScalar(r2).add(y).toArray();
+        pt[i][j+1*seg] = left_back.multiplyScalar(r1).add(y).toArray();
+        pt[i][j+2*seg] = back_right.multiplyScalar(r2).add(y).toArray();
+        pt[i][j+3*seg] = right_front.multiplyScalar(r1).add(y).toArray();
       }
   }
-
-  console.log(pt[0][0]);
-  console.log(pt[0][1]);
-    console.log(pt[0][2]);
-      console.log(pt[0][3]);
   updateGeometry(node, edge, pt, bodyGeo);
 
   //head_pos
@@ -677,6 +714,11 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     rotx = 0;
     roty = 0;
     makeHair(node, edge, wx, wy, ep, cp1, cp2, x, y, rotx, roty);
+
+
+    let params = {
+      width: 10
+    };
   }
 
 
@@ -704,15 +746,10 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
       zpos = pos;
     }
 
-    let mat = material.clone();
-    mat.vertexShader = mono_vert;
-    mat.fragmentShader = mono_frag;
-    mat.uniforms.uColor1.value = hairCol;
-
     let geo = makeGeometry(node, edge, pt);
     let geo_merg = mergeGeometry(geo);
 
-    let obj = new THREE.Mesh(geo_merg, mat);
+    let obj = new THREE.Mesh(geo_merg, hairMat);
     let sPos = headPtCal(y, x);
     obj.position.set(sPos[0], sPos[1]*0.85, sPos[2]*0.9);
     obj.rotation.x = rx;
