@@ -67,20 +67,28 @@ function init() {
   const armLength = wScale/10;
   const armLength2 = armLength * 1.2;
   const armThick = wScale/17;
+  const footLength = wScale/8;
+  const footLength2 = footLength * 1.5;
+  const footThick = wScale/17;
   const headSize = wScale/1.2;
   const bodyLength = wScale/3.9;
   const bodyWidth = wScale/4;
   let upperArmThick = new Array(pipeNode);
   let lowerArmThick = new Array(pipeNode);
   let lowerArmWidth = new Array(pipeNode);
+  let upperFootThick = new Array(pipeNode);
+  let lowerFootThick = new Array(pipeNode);
+  let lowerFootWidth = new Array(pipeNode);
   let bodyWidths = new Array(bodyNode);
   let bodyThicks = new Array(bodyNode);
 
   //Color
   const skinCol = new THREE.Color(0xe0a080);
-  const hairCol = new THREE.Color(0x5e270e);
-  const eyeCol = new THREE.Color(0x38180f);
-  const highCol = new THREE.Color(0xffffff);
+  //const hairCol = new THREE.Color(0x5e270e);
+  const hairCol = new THREE.Color(0x8b0000);
+  //const eyeCol = new THREE.Color(0x38180f);
+  const eyeCol = new THREE.Color(0xffff00);
+  const highCol = new THREE.Color(0x38180f);
   const bodyCol = new THREE.Color(0x8a4310);
   const stripeCol = new THREE.Color(0xcb9b8f);
 
@@ -136,10 +144,18 @@ function init() {
   let lowerArmGeoL;
   let lowerArmGeoR;
   let bodyGeo;
+  let upperFootGeoL;
+  let upperFootGeoR;
+  let jointFootGeoL;
+  let jointFootGeoR;
+  let lowerFootGeoL;
+  let lowerFootGeoR;
+
 
   let eyelashObj;
 
   //groups
+  //arms
   let handGL = new THREE.Group();
   let handGR = new THREE.Group();
   let jointGL = new THREE.Group();
@@ -149,8 +165,21 @@ function init() {
   let armGL = new THREE.Group();
   let armGR = new THREE.Group();
   let armG = new THREE.Group();
+  //head
   let headG = new THREE.Group();
+  //body
   let bodyG = new THREE.Group();
+  //feet
+  let toeGL = new THREE.Group();
+  let toeGR = new THREE.Group();
+  let kneeGL = new THREE.Group();
+  let kneeGR = new THREE.Group();
+  let lowerFootGL = new THREE.Group();
+  let lowerFootGR = new THREE.Group();
+  let footGL = new THREE.Group();
+  let footGR = new THREE.Group();
+  let footG = new THREE.Group();
+
 
 
   ///////////////////////////////////////inits
@@ -159,16 +188,17 @@ function init() {
   headInit();
   scene.add(headG);
 
-  armInit();
-  armUpdate(LEFT, 0.0,0.0,0,0); //-1-2, 0-1.5
-  armUpdate(RIGHT, 0.0,0,0,0);
+  //armInit();
+  //armUpdate(LEFT, 0.0,0.0,0,0); //-1-2, 0-1.5
+  //armUpdate(RIGHT, 0.0,0,0,0);
 
   //bodyInit();
   //bodyUpdate(0,0,0); //-1-1, -1-1.5, -1,1
   makeGlass();
 
-  //bodyG.position.y = -100;
-  //blink(OPEN);
+  //footInit();
+  //footUpdate(LEFT, 0,0,0,0);
+
 
 
   let n = 0;
@@ -225,6 +255,139 @@ function init() {
 ///////////////////////////////////////////////////////////////
 
 
+function footInit(){
+  //defs
+  const node = pipeNode;
+  const edge = pipeEdge;
+
+  //thick
+  for(let i=0; i<node; i++){
+      let t = i/(node-1);
+      upperFootThick[i] = footThick;
+      lowerFootThick[i] = footThick * Math.cos(Math.pow(t,2.5)*PI/3.8);
+      lowerFootWidth[i] = footThick * Math.cos(Math.pow(t,2.5)*PI/5);
+      //toe
+  }
+
+  //meke upper foot
+  //pipeRad = -PI/2;
+  let ep = new THREE.Vector2( footLength,0 );
+  let cp = new THREE.Vector2();
+  let ufoot_pt = makePipe(OPEN, node, edge, ep, cp, upperFootThick, upperFootThick);
+  ufoot_geo = makeGeometry(node, edge, ufoot_pt);
+  ufoot_geo = mergeGeometry(ufoot_geo);
+  upperFootGeoL = ufoot_geo.clone();
+  upperFootGeoR = ufoot_geo.clone();
+  lowerFootGeoL = ufoot_geo.clone();
+  lowerFootGeoR = ufoot_geo.clone();
+  let ufoot_objL = new THREE.Mesh(upperFootGeoL, bodyMat);
+  let ufoot_objR = new THREE.Mesh(upperFootGeoR, bodyMat);
+  let lfoot_objL = new THREE.Mesh(lowerFootGeoL, skinMat);
+  let lfoot_objR = new THREE.Mesh(lowerFootGeoR, skinMat);
+
+  //joint
+  let jfoot_pt = makeJoint(node, edge, footThick, -PI/100);
+  jointFootGeoL = makeGeometry(node, edge, jfoot_pt);
+  jointFootGeoL = mergeGeometry(jointFootGeoL);
+  jointArmGeoR = jointFootGeoL.clone();
+  let jfoot_objL = new THREE.Mesh(jointArmGeoL, bodyMat);
+  let jfoot_objR = new THREE.Mesh(jointArmGeoR, bodyMat);
+
+  //toe
+  //let toe_objL = new THREE.Mesh(jointArmGeoL, bodyMat);
+  //let toe_objR = new THREE.Mesh(jointArmGeoR, bodyMat);
+
+  //Grouping-L
+  lowerFootGL.add(lfoot_objL);
+  //lowerFootGL.add(toe_objL);
+  kneeGL.add(jfoot_objL);
+  kneeGL.add(lowerFootGL);
+  footGL.add(ufoot_objL);
+  footGL.add(kneeGL);
+
+  //Grouping-R
+  lowerFootGR.add(lfoot_objL);
+  //lowerFootGL.add(toe_objR);
+  kneeGR.add(jfoot_objR);
+  kneeGR.add(lowerFootGR);
+  footGR.add(ufoot_objR);
+  footGR.add(kneeGR);
+
+  footG.add(footGR);
+  footG.add(footGL);
+  //bodyG.add(armG);
+
+  scene.add(footG);
+  //footGR.position.y = -60;
+}
+
+
+
+
+function footUpdate( side, v1, v2, rot1, rot2 ){
+  //clear
+  lowerPipePos.set(0,0);
+  pipeRad = 0;
+
+  //defs
+  let node = pipeNode;
+  let edge = pipeEdge;
+
+  //value mapping
+  const bend1 = mapping(v1, -1.0, 2.0, PI/4, -PI/2);
+  const bend2 = mapping(v2, 0.001, 1.5, 0.0, -3*PI/4);
+  let {ep1, cp1, ep2, cp2} = getBezierPt(footLength, footLength2, bend1, bend2);
+
+  let upper_geo = side ? upperFootGeoR : upperFootGeoL;
+  let joint_geo = side ? jointFootGeoR : jointFootGeoL;
+  let lower_geo = side ? lowerFootGeoR : lowerFootGeoL;
+  //let hand = side ? handGR : handGL;
+  let joint = side ? kneeGR : kneeGL;
+  let lower_foot = side ? lowerFootGR : lowerFootGL;
+  let foot = side ? footGR : footGL;
+  //let rot = side ? PI : 0;
+
+  //geoUpdate
+  let upper_pt = makePipe(OPEN, node, edge, ep1, cp1, upperFootThick, upperFootThick);
+  updateGeometry(node, edge, upper_pt, upper_geo);
+
+  let joint_pt = makeJoint(node, edge, footThick, bend2);
+  updateGeometry(node, edge, joint_pt, joint_geo);
+  joint.position.set(ep1.x, ep1.y, 0);
+
+
+  let lower_pt = makePipe(OPEN, node, edge, ep2, cp2, lowerFootThick, lowerFootWidth);
+  updateGeometry(node, edge, lower_pt, lower_geo);
+  lower_foot.position.set(lowerPipePos.x,lowerPipePos.y,0);
+
+
+  //hand
+  //hand.position.set(ep2.x, ep2.y, 0);
+  //hand.rotation.z = pipeRad;
+
+  //rotation
+  let axis1 = new THREE.Vector3(1,0,0);
+  let diff = Math.abs(bend1) * -Math.PI/8;
+  let bend = bend1 + bend2 + diff;
+  let axis2 = new THREE.Vector3(Math.cos(bend),Math.sin(bend),0);
+  axis2.normalize();
+  let angle2 = rot2;
+  let q1 = new THREE.Quaternion();
+  let q2 = new THREE.Quaternion();
+  q1.setFromAxisAngle(axis1,rot1);
+  q2.setFromAxisAngle(axis2,rot2);
+  lower_foot.applyQuaternion(q2);
+  foot.applyQuaternion(q1);
+
+  foot.position.y = -50;
+}
+
+function makeToe(){
+
+
+
+
+}
 
 
 function makeGlass(){
@@ -234,7 +397,7 @@ function makeGlass(){
   let edge = headEdge;
   let geo = new THREE.CylinderGeometry( size, size, thick, edge );
   const material = new THREE.MeshPhongMaterial({
-   color: 0x151111,
+   color: 0x000000,
    opacity: 0.8,
    transparent: true,
  });
@@ -653,9 +816,9 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
 
 
   function hairInit(){
-
+    //1
     let params = {
-      len: 0.94, //length
+      len: 0.9, //length
       w: 1.11, //base_width
       t: 1, //base_thick
       endw: 0.96, //end_radius w
@@ -666,11 +829,33 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
       y: 0.066, //posy -1 - 1
       rotx: PI/18, //rotatex
       roty: -PI/5, //rotatey
-      ep: new THREE.Vector2( 1, -0.4 ),
-      cp1: new THREE.Vector2( 0.3, 1/8 ),
-      cp2: new THREE.Vector2( 1, 1/5 ),
+      ep: new THREE.Vector2( 1, 0.2 ),
+      cp1: new THREE.Vector2( 0.5, -1/8 ),
+      cp2: new THREE.Vector2( 1.2, -0.2 ),
     };
     makeHair2(params);
+
+    //2
+    let params2 = {
+      len: 0.7, //length
+      w: 1.2, //base_width
+      t: 1, //base_thick
+      endw: 0.96, //end_radius w
+      endt: 0.95, //end_radius t
+      cw: 0.7, //curve intense w
+      ct: 1.3, //curve intense t
+      x: -0.1, //posx -1 - 1
+      y: 0.05, //posy -1 - 1
+      rotx: 0, //rotatex
+      roty: -PI/16, //rotatey
+      ep: new THREE.Vector2( 1, 0.4 ),
+      cp1: new THREE.Vector2( 0.3, 0 ),
+      cp2: new THREE.Vector2( 1.1, 0 ),
+    };
+    makeHair2(params2);
+
+
+    //headG.rotation.y = PI/2;
 
   }
 
