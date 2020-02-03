@@ -1,3 +1,5 @@
+
+
 // ページの読み込みを待つ
 window.addEventListener('load', init);
 
@@ -23,7 +25,7 @@ function init() {
 
   // カメラを作成
   let camera = new THREE.PerspectiveCamera(45, width / height);
-  camera.position.set(0, 0, 300);
+  camera.position.set(-300, 0, 0);
   camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   //ライト
@@ -394,57 +396,76 @@ function makeToe(){
 function makeGlass(){
   //defs
   let size = headSize/6.4;
-  let thick = size/7;
-  let node = headNode;
+  let thick = size/5;
+  let node = 6;
   let edge = headEdge;
   let radius = new Array(node);
 
+  //material
   const material = new THREE.MeshPhongMaterial({
-   color: 0x000703,
-   opacity: 0.8,
-   shininess: 100,
-   specular : new THREE.Color(0xc94747),
+   color: 0x050503,
+   opacity: 0.95,
+   shininess: 35,
+   specular : new THREE.Color(0x080703),
    transparent: true,
-   wireframe: true
  });
+
   //thick
   for(let i=0; i<node; i++){
     let t = i / (node-1);
-    radius[i] = size * Math.cos(t*PI/2);
-    console.log(radius[i]);
+    radius[i] = size * Math.cos(t*PI/2.2);
   }
+
+  //geometry
   let ep = new THREE.Vector2( thick,0 );
-  let pt = makePipe(OPEN, node, edge, ep, ep, radius, radius);
-  let geoo = makeGeometry(node, edge, pt);
-  geoo = mergeGeometry(geoo);
-  let mesh = new THREE.Mesh( geoo, material );
-  scene.add(mesh);
-  //mesh.position.x = 150;
-  mesh.rotation.y = PI/2;
-  mesh.position.x = 80;
-  //mesh.rotation.Y = -PI/4;
+  let pt = makePipe(CLOSE, node, edge, ep, ep, radius, radius);
+  let geo = makeGeometry(node+1, edge, pt);
+  geo = mergeGeometry(geo);
+  let glassL = new THREE.Mesh( geo, material );
+  glassL.rotation.y = -PI/2;
+  let glassR = glassL.clone();
 
+  //glassR.rotation.y = -PI/2.5;
 
+  //position
+  let pos = headPtCal(0.48,-0.15);
+  let z = pos[2]*1.18;
+  glassL.position.set(pos[0], pos[1], z);
+  glassR.position.set(-pos[0], pos[1], z);
 
-  let geo = new THREE.CylinderGeometry( size, size, thick, edge );
-
-  let glassR = new THREE.Mesh( geo, material );
-  glassR.rotation.x = PI/2.1;
-  let glassL = glassR.clone();
-  let posR = headPtCal(0.48,-0.158);
-  let posL = headPtCal(0.48,0.158);
-  let z = posR[2]*1.2;
-
-  glassR.position.set(posR[0], posR[1], z);
-  glassL.position.set(posL[0], posL[1], z);
-
+  //bridge
   let len = size / 1.7;
-  let size2 = thick / 1.5;
-  let geo2 = new THREE.CylinderGeometry( size2, size2, len, edge );
+  let thick2 = thick / 2;
+  let geo2 = new THREE.CylinderGeometry( thick2, thick2, len, edge );
   const material2 = new THREE.MeshLambertMaterial({color: 0x393939});
   let bridge = new THREE.Mesh( geo2, material2 );
   bridge.rotation.z = PI/2;
-  bridge.position.set(0,posR[1],z);
+  bridge.position.set(0,pos[1],z);
+
+  //temple
+  let len2 = size * 2.8;
+  let thick3 = thick / 3;
+  let geo3 = new THREE.CylinderGeometry( thick3, thick3, len2, edge );
+  let templeL = new THREE.Mesh( geo3, material2 );
+
+  scene.add(templeL);
+
+  let pos2 = headPtCal(0.48,0.35);
+  templeL.position.x = pos2[0];
+  templeL.position.y = pos2[1];
+  templeL.position.z = z/1.8;
+  templeL.rotation.x = PI/2;
+  templeL.rotation.y = PI/6;
+  templeL.rotation.z = PI/9;
+    let templeR = templeL.clone();
+      scene.add(templeR);
+  templeR.position.x = -pos2[0];
+  templeR.rotation.x = -PI/2;
+  //templeR.rotation.y = -PI/6;
+  //templeR.rotation.z = -PI/9;
+
+
+  //grouping
   let glassG = new THREE.Group();
   glassG.add(glassL);
   glassG.add(glassR);
