@@ -28,7 +28,7 @@ function init() {
 
   //ライト
   const light = new THREE.DirectionalLight( 0xffffff );
-  light.position.set( -100, 120, 280 );
+  light.position.set( 0, 10, 280 );
   scene.add( light );
 
 
@@ -187,6 +187,7 @@ function init() {
 
   headInit();
   scene.add(headG);
+  //headG.rotation.y = PI/8;
 
   //armInit();
   //armUpdate(LEFT, 0.0,0.0,0,0); //-1-2, 0-1.5
@@ -391,16 +392,42 @@ function makeToe(){
 
 
 function makeGlass(){
+  //defs
   let size = headSize/6.4;
-  let thick = size/7.5;
+  let thick = size/7;
   let node = headNode;
   let edge = headEdge;
-  let geo = new THREE.CylinderGeometry( size, size, thick, edge );
+  let radius = new Array(node);
+
   const material = new THREE.MeshPhongMaterial({
-   color: 0x000000,
+   color: 0x000703,
    opacity: 0.8,
+   shininess: 100,
+   specular : new THREE.Color(0xc94747),
    transparent: true,
+   wireframe: true
  });
+  //thick
+  for(let i=0; i<node; i++){
+    let t = i / (node-1);
+    radius[i] = size * Math.cos(t*PI/2);
+    console.log(radius[i]);
+  }
+  let ep = new THREE.Vector2( thick,0 );
+  let pt = makePipe(OPEN, node, edge, ep, ep, radius, radius);
+  let geoo = makeGeometry(node, edge, pt);
+  geoo = mergeGeometry(geoo);
+  let mesh = new THREE.Mesh( geoo, material );
+  scene.add(mesh);
+  //mesh.position.x = 150;
+  mesh.rotation.y = PI/2;
+  mesh.position.x = 80;
+  //mesh.rotation.Y = -PI/4;
+
+
+
+  let geo = new THREE.CylinderGeometry( size, size, thick, edge );
+
   let glassR = new THREE.Mesh( geo, material );
   glassR.rotation.x = PI/2.1;
   let glassL = glassR.clone();
@@ -423,6 +450,12 @@ function makeGlass(){
   glassG.add(glassR);
   glassG.add(bridge);
   headG.add(glassG);
+
+
+
+  //let geoo = new THREE.CylinderGeometry( 20, 20, 30, 12 );
+
+
 }
 
 
