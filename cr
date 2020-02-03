@@ -1,5 +1,3 @@
-
-
 // ページの読み込みを待つ
 window.addEventListener('load', init);
 
