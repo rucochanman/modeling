@@ -23,7 +23,7 @@ function init() {
 
   // カメラを作成
   let camera = new THREE.PerspectiveCamera(45, width / height);
-  camera.position.set(-300, 0, 0);
+  camera.position.set(0, 0, 300);
   camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   //ライト
@@ -87,9 +87,10 @@ function init() {
   //const hairCol = new THREE.Color(0x5e270e);
   const hairCol = new THREE.Color(0x8b0000);
   //const eyeCol = new THREE.Color(0x38180f);
-  const eyeCol = new THREE.Color(0xffff00);
+  const eyeCol = new THREE.Color(0xffd700);
   const highCol = new THREE.Color(0x38180f);
-  const bodyCol = new THREE.Color(0x8a4310);
+  //const bodyCol = new THREE.Color(0x8a4310);
+  const bodyCol = new THREE.Color(0x000000);
   const stripeCol = new THREE.Color(0xcb9b8f);
 
   //materials
@@ -187,6 +188,7 @@ function init() {
 
   headInit();
   scene.add(headG);
+  //makeGlass();
   //headG.rotation.y = PI/8;
 
   //armInit();
@@ -195,10 +197,12 @@ function init() {
 
   //bodyInit();
   //bodyUpdate(0,0,0); //-1-1, -1-1.5, -1,1
-  makeGlass();
-
+  //
+  //bodyG.position.y = -50;
+  //bodyG.rotation.y = PI/4;
   //footInit();
-  //footUpdate(LEFT, 0,0,0,0);
+  //footUpdate(LEFT, 1,1,0,0);
+  //footUpdate(RIGHT, 1,1,0,0);
 
 
 
@@ -256,10 +260,58 @@ function init() {
 ///////////////////////////////////////////////////////////////
 
 
+function maketorus(){
+
+  let node = 6;
+  let edge = 8;
+  let radius = new Array(node);
+
+  //thick
+  for(let i=0; i<node; i++){
+    let t = i / (node-1);
+    radius[i] = 30 * Math.cos(t*PI/2.2);
+  }
+
+
+  //material
+  const material = new THREE.MeshPhongMaterial({
+   color: 0x050503,
+   wireframe: true
+   //opacity: 0.95,
+   //shininess: 35,
+   //specular : new THREE.Color(0x080703),
+   //transparent: true,
+ });
+
+
+  //geometry
+  let ep = new THREE.Vector2( 20,0 );
+  let pt = makePipe(CLOSE, node, edge, ep, ep, radius, radius);
+  let geo = makeGeometry(node+1, edge, pt);
+  geo = mergeGeometry(geo);
+  let obj = new THREE.Mesh( geo, material );
+  scene.add(obj);
+  obj.rotation.y = -PI/2;
+  obj.position.x = 150;
+
+
+  var geometry = new THREE.CylinderGeometry( 50, 50, 20, 32 );
+  var cylinder = new THREE.Mesh( geometry, material );
+  scene.add( cylinder );
+  cylinder.position.x = -50;
+  cylinder.rotation.x = -PI/2;
+  cylinder.rotation.z = PI/2;
+
+
+}
+
+
+
 function footInit(){
   //defs
   const node = pipeNode;
   const edge = pipeEdge;
+
 
   //thick
   for(let i=0; i<node; i++){
@@ -271,11 +323,9 @@ function footInit(){
   }
 
   //meke upper foot
-  //pipeRad = -PI/2;
   let ep = new THREE.Vector2( footLength,0 );
-  let cp = new THREE.Vector2();
-  let ufoot_pt = makePipe(OPEN, node, edge, ep, cp, upperFootThick, upperFootThick);
-  ufoot_geo = makeGeometry(node, edge, ufoot_pt);
+  let ufoot_pt = makePipe(OPEN, node, edge, ep, ep, upperFootThick, upperFootThick);
+  let ufoot_geo = makeGeometry(node, edge, ufoot_pt);
   ufoot_geo = mergeGeometry(ufoot_geo);
   upperFootGeoL = ufoot_geo.clone();
   upperFootGeoR = ufoot_geo.clone();
@@ -290,9 +340,9 @@ function footInit(){
   let jfoot_pt = makeJoint(node, edge, footThick, -PI/100);
   jointFootGeoL = makeGeometry(node, edge, jfoot_pt);
   jointFootGeoL = mergeGeometry(jointFootGeoL);
-  jointArmGeoR = jointFootGeoL.clone();
-  let jfoot_objL = new THREE.Mesh(jointArmGeoL, bodyMat);
-  let jfoot_objR = new THREE.Mesh(jointArmGeoR, bodyMat);
+  jointFootGeoR = jointFootGeoL.clone();
+  let jfoot_objL = new THREE.Mesh(jointFootGeoL, bodyMat);
+  let jfoot_objR = new THREE.Mesh(jointFootGeoR, bodyMat);
 
   //toe
   //let toe_objL = new THREE.Mesh(jointArmGeoL, bodyMat);
@@ -307,15 +357,17 @@ function footInit(){
   footGL.add(kneeGL);
 
   //Grouping-R
-  lowerFootGR.add(lfoot_objL);
+  lowerFootGR.add(lfoot_objR);
   //lowerFootGL.add(toe_objR);
   kneeGR.add(jfoot_objR);
   kneeGR.add(lowerFootGR);
   footGR.add(ufoot_objR);
   footGR.add(kneeGR);
 
-  footG.add(footGR);
+  footGR.position.x = -100;
   footG.add(footGL);
+  footG.add(footGR);
+
   //bodyG.add(armG);
 
   scene.add(footG);
@@ -346,7 +398,7 @@ function footUpdate( side, v1, v2, rot1, rot2 ){
   let joint = side ? kneeGR : kneeGL;
   let lower_foot = side ? lowerFootGR : lowerFootGL;
   let foot = side ? footGR : footGL;
-  //let rot = side ? PI : 0;
+  let pos = side ? -100 : 100;
 
   //geoUpdate
   let upper_pt = makePipe(OPEN, node, edge, ep1, cp1, upperFootThick, upperFootThick);
@@ -356,10 +408,10 @@ function footUpdate( side, v1, v2, rot1, rot2 ){
   updateGeometry(node, edge, joint_pt, joint_geo);
   joint.position.set(ep1.x, ep1.y, 0);
 
-
   let lower_pt = makePipe(OPEN, node, edge, ep2, cp2, lowerFootThick, lowerFootWidth);
   updateGeometry(node, edge, lower_pt, lower_geo);
   lower_foot.position.set(lowerPipePos.x,lowerPipePos.y,0);
+
 
 
   //hand
@@ -369,18 +421,19 @@ function footUpdate( side, v1, v2, rot1, rot2 ){
   //rotation
   let axis1 = new THREE.Vector3(1,0,0);
   let diff = Math.abs(bend1) * -Math.PI/8;
-  let bend = bend1 + bend2 + diff;
+  let bend = bend1 + diff;
   let axis2 = new THREE.Vector3(Math.cos(bend),Math.sin(bend),0);
   axis2.normalize();
-  let angle2 = rot2;
   let q1 = new THREE.Quaternion();
   let q2 = new THREE.Quaternion();
-  q1.setFromAxisAngle(axis1,rot1);
-  q2.setFromAxisAngle(axis2,rot2);
-  lower_foot.applyQuaternion(q2);
+  q1.setFromAxisAngle(axis1,rot1-PI/2);
+  q2.setFromAxisAngle(axis2,rot2+PI);
+  joint.applyQuaternion(q2);
   foot.applyQuaternion(q1);
 
   foot.position.y = -50;
+  foot.position.x = pos;
+  foot.rotation.y = PI/2;
 }
 
 function makeToe(){
@@ -395,12 +448,13 @@ function makeGlass(){
   //defs
   let size = headSize/6.4;
   let thick = size/5;
-  let node = 6;
+  let node = reso;
   let edge = headEdge;
   let radius = new Array(node);
 
   //material
   const material = new THREE.MeshPhongMaterial({
+   side:THREE.DoubleSide,
    color: 0x050503,
    opacity: 0.95,
    shininess: 35,
@@ -413,7 +467,6 @@ function makeGlass(){
     let t = i / (node-1);
     radius[i] = size * Math.cos(t*PI/2.2);
   }
-
   //geometry
   let ep = new THREE.Vector2( thick,0 );
   let pt = makePipe(CLOSE, node, edge, ep, ep, radius, radius);
@@ -422,9 +475,6 @@ function makeGlass(){
   let glassL = new THREE.Mesh( geo, material );
   glassL.rotation.y = -PI/2;
   let glassR = glassL.clone();
-
-  //glassR.rotation.y = -PI/2.5;
-
   //position
   let pos = headPtCal(0.48,-0.15);
   let z = pos[2]*1.18;
@@ -455,12 +505,44 @@ function makeGlass(){
   templeL.rotation.x = PI/2;
   templeL.rotation.y = PI/6;
   templeL.rotation.z = PI/9;
-    let templeR = templeL.clone();
-      scene.add(templeR);
+  let templeR = templeL.clone();
+  scene.add(templeR);
   templeR.position.x = -pos2[0];
   templeR.rotation.x = -PI/2;
   //templeR.rotation.y = -PI/6;
   //templeR.rotation.z = -PI/9;
+
+
+  //side
+  let side_pt = [];
+  let z_w = 12; //奥行き
+  let x_w = 10; //幅
+  for(let i=0; i<node; i++){
+    side_pt[i] = [];
+    let t = i / (node-1);
+    let phase = PI/4 + (Math.pow(t, 1.8) * PI/4);
+    let f = 1 - ( phase/(PI/2) );
+    let z = t * z_w;
+    let div = t * x_w;
+    for(let j=0; j<edge; j++){
+      let theta = j * PI / edge;
+      let y = -size * Math.cos( f*theta+phase );
+      let x = size * Math.sin( f*theta+phase )+div;
+      side_pt[i][j] = [x, y, -z];
+    }
+  }
+  //ruco
+  let side_geo = makeGeometry(node, edge, side_pt);
+  side_geo = mergeGeometry(side_geo);
+  let side_obj = new THREE.Mesh( side_geo, material2 );
+  scene.add(side_obj);
+  let side_pos = headPtCal(0.3,0.35);
+  side_obj.position.y = size/8;
+  side_obj.position.x = size*1.2;
+  side_obj.position.z = 49;
+  side_obj.rotation.x = PI/30;
+  //console.log(size);
+  //side_obj.rotation.y = PI/2;
 
 
   //grouping
@@ -532,29 +614,39 @@ function bodyInit(){
 
 
 function makeHip(){
-  //defs
-  pipeRad = -PI/2;
+
   const node = Math.floor(bodyNode/2);
   const edge = bodyEdge;
-  const h = bodyLength/2.2;
-  const width = new Array(node);
-  const thick = new Array(node);
+  const h = bodyLength/3.2;
+  const center = new THREE.Vector2();
 
-  //thick
-  for(let i=0;i<node;i++){
+  let pt = [];
+  for(let i=0; i<node; i++){
+    pt[i] = [];
     let t = i / (node-1);
-    width[i] = bodyWidth * Math.cos(Math.pow(t,2)*PI/2.8);
-    thick[i] = width[i] * 0.65;
+    let width = bodyWidth * Math.cos(t * PI/2.8);
+    let thick = width * 0.65;
+    let z = t * h;
+    for(let j=0; j<edge; j++){
+      let theta = j * 2 * PI/edge;
+      let r = Math.pow(Math.cos(theta)/width,2) + Math.pow(Math.sin(theta)/thick,2);
+      r = Math.sqrt(1/r);
+      let v = new THREE.Vector2(1,0);
+      v.rotateAround(center, -theta);
+      let p = v.multiplyScalar(r);
+      pt[i][j] = [p.x, p.y, z];
+    }
   }
-
-  //make obj
-  const ep = new THREE.Vector2( 0, -h );
-  let pt = makePipe(CLOSE, node, edge, ep, ep, width, thick);
-  let geo = makeGeometry(node+1, edge, pt);
+  let geo = makeGeometry(node, edge, pt);
   geo = mergeGeometry(geo);
-  let obj = new THREE.Mesh(geo, bodyMat);
-  //scene.add(obj);
+  const mat = new THREE.MeshLambertMaterial({
+    color: 0xff0000,
+    //wireframe: true
+  });
+  let obj = new THREE.Mesh( geo, mat );
   bodyG.add(obj);
+  obj.rotation.x = PI/2;
+
 }
 
 
@@ -716,7 +808,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     for(let i=0;i<node;i++){
       pt[i] = [];
       let r = (node-1-i) * size / node;
-      let thick = Math.pow((node-i)*1.0/node, 4) * base; //ruco_size
+      let thick = Math.pow((node-i)*1.0/node, 4) * base;
       z += thick;
       for(let j=0;j<edge+1;j++){
         let x = r * Math.cos( j*2*PI/(edge) );
@@ -806,7 +898,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
 
 
 
-  function makeHair2(p){
+  function makeHair(p){
     //defs
     const len = p.len * headSize/3;
     const node = reso * 2;
@@ -878,203 +970,51 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
       cw: 0.7, //curve intense w
       ct: 1.3, //curve intense t
       x: -0.48, //posx -1 - 1
-      y: 0.066, //posy -1 - 1
+      y: 0.065, //posy -1 - 1
       rotx: PI/18, //rotatex
       roty: -PI/5, //rotatey
       ep: new THREE.Vector2( 1, 0.2 ),
       cp1: new THREE.Vector2( 0.5, -1/8 ),
       cp2: new THREE.Vector2( 1.2, -0.2 ),
     };
-    makeHair2(params);
+    //makeHair(params);
 
     //2
     let params2 = {
       len: 0.7, //length
-      w: 1.2, //base_width
-      t: 1, //base_thick
+      w: 1.5, //base_width
+      t: 1.3, //base_thick
       endw: 0.96, //end_radius w
       endt: 0.95, //end_radius t
       cw: 0.7, //curve intense w
       ct: 1.3, //curve intense t
       x: -0.1, //posx -1 - 1
-      y: 0.05, //posy -1 - 1
+      y: 0.038, //posy -1 - 1
       rotx: 0, //rotatex
-      roty: -PI/16, //rotatey
-      ep: new THREE.Vector2( 1, 0.4 ),
+      roty: -PI/12, //rotatey -migi
+      ep: new THREE.Vector2( 1, 0.48 ),
       cp1: new THREE.Vector2( 0.3, 0 ),
-      cp2: new THREE.Vector2( 1.1, 0 ),
+      cp2: new THREE.Vector2( 1.0, 0 ),
     };
-    makeHair2(params2);
+    makeHair(params2);
+
+    params2.w = 1.3;
+    params2.x = -0.4;
+    params2.y = 0.05;
+    params2.ep.x = 0.8;
+    params2.ep.y = 0.43;
+    params2.cp2.x = 0.9;
+    params2.cp2.y = 0.2;    
+    params2.cp1.x = 0.5;
+    params2.roty = -PI/32;
+    makeHair(params2);
 
 
-    //headG.rotation.y = PI/2;
-
-  }
-
-  function hair_init(){
-
-    const edge = 12;
-    const node = 12;
-
-    let wx = new Array(node);
-    let wy = new Array(node);
-
-    //1左端
-    let w = headSize/9;
-    for(let j=0; j<node; j++){
-      let t = j * 1.0/(node-1);
-      wx[j] = w * Math.cos(Math.pow(t,0.7)*(PI/2*0.96));
-      wy[j] = w * 0.4 * Math.cos(Math.pow(t,1.3)*(PI/2*0.95));
-    }
-    let h = headSize/3.2;
-    let ep = new THREE.Vector2( h, -h/2.5 );
-    let cp1 = new THREE.Vector2( h*0.3, h/8 );
-    let cp2 = new THREE.Vector2( h*1, h/5 );
-    let x = -0.48;
-    let y = 0.066;
-    let rotx = PI/18;
-    let roty = -PI/5;
-    //makeHair(node, edge, wx, wy, ep, cp1, cp2, x, y, rotx, roty);
-
-    //2
-    w = headSize/6.8;
-    for(let j=0; j<node; j++){
-      let t = j * 1.0/(node-1);
-      wx[j] = w * Math.cos(Math.pow(t,0.8)*(PI/2*0.97));
-      wy[j] = w * 0.38 * Math.cos(Math.pow(t,0.7)*(PI/2*0.96));
-    }
-    h = headSize/3.0;
-    ep = new THREE.Vector2( h, -h*0.55 );
-    cp1 = new THREE.Vector2( h*0.23, h*0.1 );
-    cp2 = new THREE.Vector2( h*1.02, h*0.25 );
-    x = -0.3;
-    y = 0.04;
-    rotx = -PI/45;
-    roty = -PI/12;
-    makeHair(node, edge, wx, wy, ep, cp1, cp2, x, y, rotx, roty);
-
-    //3
-    w = headSize/16;
-    for(let j=0; j<node; j++){
-      let t = j * 1.0/(node-1);
-      wx[j] = w * Math.cos(Math.pow(t,1.2)*(PI/2*0.95));
-      wy[j] = w * 0.48 * Math.cos(Math.pow(t,1.5)*(PI/2*0.95));
-    }
-    h = headSize/4.2;
-    ep = new THREE.Vector2( h, -h/1.7 );
-    cp1 = new THREE.Vector2( h*0.4, h/10 );
-    cp2 = new THREE.Vector2( h*1.2, h/12 );
-    x = -0.23;
-    y = 0.04;
-    rotx = -PI/12;
-    roty = -PI/50;
-    makeHair(node, edge, wx, wy, ep, cp1, cp2, x, y, rotx, roty);
-
-    //4
-    w = headSize/7.7;
-    for(let j=0; j<node; j++){
-      let t = j * 1.0/(node-1);
-      wx[j] = w * Math.cos(Math.pow(t,0.8)*(PI/2*0.97));
-      wy[j] = w * 0.48 * Math.cos(Math.pow(t,0.8)*(PI/2*0.96));
-    }
-    h = headSize/3.5;
-    ep = new THREE.Vector2( h, -h/1.9 );
-    cp1 = new THREE.Vector2( h*0.23, h*0.01 );
-    cp2 = new THREE.Vector2( h*0.8, h*0.42 );
-    x = 0.1;
-    y = 0.03;
-    rotx = -PI/46;
-    roty = -PI/14;
-    makeHair(node, edge, wx, wy, ep, cp1, cp2, x, y, rotx, roty);
-
-    //5跳ね上がり
-    w = headSize/11;
-    for(let j=0; j<node; j++){
-      let t = j * 1.0/(node-1);
-      wx[j] = w * Math.cos(Math.pow(t,1.4)*(PI/2*0.95));
-      wy[j] = w * 0.4 * Math.cos(Math.pow(t,1.5)*(PI/2*0.95));
-    }
-    h = headSize/2.9;
-    ep = new THREE.Vector2( h, h/3 );
-    cp1 = new THREE.Vector2( h/5, h/5 );
-    cp2 = new THREE.Vector2( h*0.7, -h/10 );
-    x = -0.35;
-    y = 0.06;
-    rotx = PI/50;
-    roty = -PI/7;
-    makeHair(node, edge, wx, wy, ep, cp1, cp2, x, y, rotx, roty);
-
-    //後頭部
-    w = headSize/14;
-    for(let j=0; j<node; j++){
-      let t = j * 1.0/(node-1);
-      wx[j] = w * Math.cos(Math.pow(t,1.4)*(PI/2*0.95));
-      wy[j] = w * 0.63 * Math.cos(Math.pow(t,1.1)*(PI/2*0.95));
-    }
-    h = headSize/4.7;
-    ep = new THREE.Vector2( h*0.8, -h*0.8);
-    cp1 = new THREE.Vector2( 0, h/2 );
-    cp2 = new THREE.Vector2( h*1.9, h );
-    x = 0.0;
-    y = -0.1;
-    rotx = -PI*0.96;
-    roty = 0;
-    makeHair(node, edge, wx, wy, ep, cp1, cp2, x, y, rotx, roty);
-
-    //後頭部
-    w = headSize/19;
-    for(let j=0; j<node; j++){
-      let t = j * 1.0/(node-1);
-      wx[j] = w * Math.cos(Math.pow(t,1.4)*(PI/2*0.95));
-      wy[j] = w * 0.7 * Math.cos(Math.pow(t,1.1)*(PI/2*0.95));
-    }
-    h = headSize/3.2;
-    ep = new THREE.Vector2( -h*1, -h*0.1);
-    cp1 = new THREE.Vector2( -h*0.5, h*0.1 );
-    cp2 = new THREE.Vector2( -h*0.8, h*0.35 );
-    x = 0.0;
-    y = -0.15;
-    rotx = 0;
-    roty = 0;
-    makeHair(node, edge, wx, wy, ep, cp1, cp2, x, y, rotx, roty);
+    headG.rotation.y = PI/2;
 
   }
 
 
-  function makeHair(node, edge, w1, w2, ep, cp1, cp2, x, y, rx, ry){
-
-    const center = new THREE.Vector2();
-    let rot = 0;
-    let pt = [];
-    let zpos = new THREE.Vector2();
-
-    //cal step
-    let curve = new THREE.CubicBezierCurve(center,cp1,cp2,ep);
-    let points = curve.getPoints( node );
-
-    for(let i=0; i<node; i++){
-      pt[i] = [];
-      let pos = points[i];
-      let rot = Math.atan2(pos.y-zpos.y, pos.x-zpos.x);
-      for(let j=0; j<edge; j++){
-        let z = w1[i] * Math.cos(j*2*PI/edge);
-        let v = new THREE.Vector2(0, w2[i] * Math.sin(j*2*PI/edge));
-        v = v.rotateAround(center, rot);
-        pt[i][j] = [pos.x+v.x, pos.y+v.y, z];
-      }
-      zpos = pos;
-    }
-
-    let geo = makeGeometry(node, edge, pt);
-    let geo_merg = mergeGeometry(geo);
-
-    let obj = new THREE.Mesh(geo_merg, hairMat);
-    let sPos = headPtCal(y, x);
-    obj.position.set(sPos[0], sPos[1]*0.85, sPos[2]*0.9);
-    obj.rotation.x = rx;
-    obj.rotation.y = -PI/2 + ry;
-    headG.add(obj);
-  }
 
 
 
@@ -1103,8 +1043,8 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
 
     /////eye_lash
     const posL = headPtCal(0.36, 0.12);
-    const posR = headPtCal(0.36, -0.22);
-    const len = headSize/20;
+    const posR = headPtCal(0.37, -0.22);
+    const len = headSize/22;
     const center = new THREE.Vector3();
     const ep = new THREE.Vector3(-len, len, 0);
     let lash_geoL = new THREE.Geometry();
@@ -1114,6 +1054,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     let lash_objR = lash_objL.clone();
     lash_objL.position.set(posL[0], posL[1], posL[2]);
     lash_objR.position.set(posR[0], posR[1], posR[2]);
+    //group
     let lashes = new THREE.Group();
     lashes.add(lash_objL);
     lashes.add(lash_objR);
@@ -1365,6 +1306,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     const ep1 = new THREE.Vector2( x1,y1 );
     let cp1 = new THREE.Vector2( 0,0 );
     ep1.y>0 ? cp1.y = y1/2 : cp1.x = -y1/2;
+    //ep1.y>0 ? cp1.y = y1/2 : cp1.x = y1/2;
     //arm2
     const joint_len = armThick * Math.abs(bend2);
     len2 -= joint_len;
