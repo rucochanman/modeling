@@ -33,7 +33,7 @@ function init() {
 
 
   let ambLight = 1;
-  const envlight = new THREE.AmbientLight(0xffffff, 1);
+  const envlight = new THREE.AmbientLight(0xffffff, ambLight);
   scene.add(envlight);
 
 
@@ -159,8 +159,8 @@ function init() {
   //arms
   let handGL = new THREE.Group();
   let handGR = new THREE.Group();
-  let jointGL = new THREE.Group();
-  let jointGR = new THREE.Group();
+  let elbowGL = new THREE.Group();
+  let elbowGR = new THREE.Group();
   let lowerArmGL = new THREE.Group();
   let lowerArmGR = new THREE.Group();
   let armGL = new THREE.Group();
@@ -188,7 +188,7 @@ function init() {
 
   headInit();
   scene.add(headG);
-  //makeGlass();
+  makeGlass();
   //headG.rotation.y = PI/8;
 
   //armInit();
@@ -260,50 +260,6 @@ function init() {
 ///////////////////////////////////////////////////////////////
 
 
-function maketorus(){
-
-  let node = 6;
-  let edge = 8;
-  let radius = new Array(node);
-
-  //thick
-  for(let i=0; i<node; i++){
-    let t = i / (node-1);
-    radius[i] = 30 * Math.cos(t*PI/2.2);
-  }
-
-
-  //material
-  const material = new THREE.MeshPhongMaterial({
-   color: 0x050503,
-   wireframe: true
-   //opacity: 0.95,
-   //shininess: 35,
-   //specular : new THREE.Color(0x080703),
-   //transparent: true,
- });
-
-
-  //geometry
-  let ep = new THREE.Vector2( 20,0 );
-  let pt = makePipe(CLOSE, node, edge, ep, ep, radius, radius);
-  let geo = makeGeometry(node+1, edge, pt);
-  geo = mergeGeometry(geo);
-  let obj = new THREE.Mesh( geo, material );
-  scene.add(obj);
-  obj.rotation.y = -PI/2;
-  obj.position.x = 150;
-
-
-  var geometry = new THREE.CylinderGeometry( 50, 50, 20, 32 );
-  var cylinder = new THREE.Mesh( geometry, material );
-  scene.add( cylinder );
-  cylinder.position.x = -50;
-  cylinder.rotation.x = -PI/2;
-  cylinder.rotation.z = PI/2;
-
-
-}
 
 
 
@@ -520,7 +476,7 @@ function makeGlass(){
   for(let i=0; i<node; i++){
     side_pt[i] = [];
     let t = i / (node-1);
-    let phase = PI/4 + (Math.pow(t, 1.8) * PI/4);
+    let phase = Math.pow(t, 1.8) * PI/2;
     let f = 1 - ( phase/(PI/2) );
     let z = t * z_w;
     let div = t * x_w;
@@ -537,10 +493,11 @@ function makeGlass(){
   let side_obj = new THREE.Mesh( side_geo, material2 );
   scene.add(side_obj);
   let side_pos = headPtCal(0.3,0.35);
-  side_obj.position.y = size/8;
-  side_obj.position.x = size*1.2;
-  side_obj.position.z = 49;
-  side_obj.rotation.x = PI/30;
+  //side_obj.position.y = size/8;
+  //side_obj.position.x = size*1.2;
+  //side_obj.position.z = 49;
+  //side_obj.rotation.x = PI/30;
+  //headG.rotation.y = -PI/2;
   //console.log(size);
   //side_obj.rotation.y = PI/2;
 
@@ -1004,13 +961,13 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     params2.ep.x = 0.8;
     params2.ep.y = 0.43;
     params2.cp2.x = 0.9;
-    params2.cp2.y = 0.2;    
+    //params2.cp2.y = 1.2;
     params2.cp1.x = 0.5;
     params2.roty = -PI/32;
     makeHair(params2);
 
 
-    headG.rotation.y = PI/2;
+
 
   }
 
@@ -1217,17 +1174,17 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     armGL.add(uarm_obj);
     lowerArmGL.add(larm_obj);
     lowerArmGL.add(handGL);
-    jointGL.add(jarm_obj);
-    jointGL.add(lowerArmGL);
-    armGL.add(jointGL);
+    elbowGL.add(jarm_obj);
+    elbowGL.add(lowerArmGL);
+    armGL.add(elbowGL);
 
     //Grouping-R
     armGR.add(uarm_objR);
     lowerArmGR.add(larm_objR);
     lowerArmGR.add(handGR);
-    jointGR.add(lowerArmGR);
-    jointGR.add(jarm_objR);
-    armGR.add(jointGR);
+    elbowGR.add(lowerArmGR);
+    elbowGR.add(jarm_objR);
+    armGR.add(elbowGR);
 
     armG.add(armGR);
     armG.add(armGL);
@@ -1257,7 +1214,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     let joint_geo = side ? jointArmGeoR : jointArmGeoL;
     let lower_geo = side ? lowerArmGeoR : lowerArmGeoL;
     let hand = side ? handGR : handGL;
-    let joint = side ? jointGR : jointGL;
+    let joint = side ? elbowGR : elbowGL;
     let lower_arm = side ? lowerArmGR : lowerArmGL;
     let arm = side ? armGR : armGL;
     let rot = side ? PI : 0;
