@@ -73,6 +73,7 @@ function init() {
   const headSize = wScale/1.2;
   const bodyLength = wScale/3.9;
   const bodyWidth = wScale/4;
+  const ankleThick = footThick * Math.cos(PI/3.8);
   let upperArmThick = new Array(pipeNode);
   let lowerArmThick = new Array(pipeNode);
   let lowerArmWidth = new Array(pipeNode);
@@ -151,6 +152,8 @@ function init() {
   let upperFootGeoR;
   let jointFootGeoL;
   let jointFootGeoR;
+  let ankleGeoL;
+  let ankleGeoR;
   let lowerFootGeoL;
   let lowerFootGeoR;
 
@@ -188,9 +191,9 @@ function init() {
   ///////////////////////////////////////inits
 
 
-  headInit();
-  scene.add(headG);
-  makeGlass();
+  //headInit();
+  //scene.add(headG);
+  //makeGlass();
   //headG.rotation.y = PI/8;
 
   //armInit();
@@ -202,7 +205,7 @@ function init() {
   //
   //bodyG.position.y = -50;
   //bodyG.rotation.y = PI/4;
-  //footInit();
+  footInit();
   //footUpdate(LEFT, 1,1,0,0);
   //footUpdate(RIGHT, 1,1,0,0);
 
@@ -265,10 +268,17 @@ function init() {
 
 
 
+
+
 function footInit(){
   //defs
   const node = pipeNode;
   const edge = pipeEdge;
+  let toeThick = new Array(node);
+  let toeWidth = new Array(node);
+  let toe_ampt = footThick * 3;
+  let toe_ampw = footThick * 1;
+  let toeLength = footLength;
 
 
   //thick
@@ -276,8 +286,13 @@ function footInit(){
       let t = i/(node-1);
       upperFootThick[i] = footThick;
       lowerFootThick[i] = footThick * Math.cos(Math.pow(t,2.5)*PI/3.8);
-      lowerFootWidth[i] = footThick * Math.cos(Math.pow(t,2.5)*PI/5);
+      lowerFootWidth[i] = lowerFootThick[i];
       //toe
+      let theta1 = 1.6 * Math.pow(t,0.8) * PI/2;
+      let theta2 = 1.4 * Math.pow(t,2) * PI/2;
+      toeThick[i] = toe_ampt * Math.sin(theta1) + ankleThick;
+      toeWidth[i] = toe_ampw * Math.sin(theta2) + ankleThick;
+
   }
 
   //meke upper foot
@@ -299,12 +314,23 @@ function footInit(){
   jointFootGeoL = makeGeometry(node, edge, jfoot_pt);
   jointFootGeoL = mergeGeometry(jointFootGeoL);
   jointFootGeoR = jointFootGeoL.clone();
+  ankleGeoL = jointFootGeoL.clone();
+  ankleGeoR = jointFootGeoL.clone();
   let jfoot_objL = new THREE.Mesh(jointFootGeoL, bodyMat);
   let jfoot_objR = new THREE.Mesh(jointFootGeoR, bodyMat);
+  let ankle_objL = new THREE.Mesh(ankleGeoL, bodyMat);  
+  let ankle_objR = new THREE.Mesh(ankleGeoR, bodyMat);
 
   //toe
-  //let toe_objL = new THREE.Mesh(jointArmGeoL, bodyMat);
-  //let toe_objR = new THREE.Mesh(jointArmGeoR, bodyMat);
+  let toe_ep = new THREE.Vector2( toeLength,0 );
+  let toe_pt = makePipe(CLOSE, node, edge, toe_ep, toe_ep, toeThick, toeThick);
+  let toe_geo = makeGeometry(node+1, edge, toe_pt);
+  toe_geo = mergeGeometry(toe_geo);
+  let toe_objL = new THREE.Mesh(toe_geo, skinMat);
+
+  scene.add(toe_objL);
+  toe_objL.position.x = 100;
+
 
   //Grouping-L
   lowerFootGL.add(lfoot_objL);
@@ -404,26 +430,26 @@ function makeToe(){
 
 function makeGlass(){
   //defs
-  let size = headSize/6.4;
-  let thick = size/5;
+  let size = headSize/6;
+  let thick = size/5.5;
   let node = reso;
   let edge = headEdge;
   let radius = new Array(node);
 
   //material
   const material = new THREE.MeshPhongMaterial({
-   side:THREE.DoubleSide,
+   //side:THREE.DoubleSide,
    color: 0x050503,
    opacity: 0.95,
    shininess: 35,
-   specular : new THREE.Color(0x080703),
+   specular : new THREE.Color(0x090703),
    transparent: true,
  });
 
   //thick
   for(let i=0; i<node; i++){
     let t = i / (node-1);
-    radius[i] = size * Math.cos(t*PI/2.2);
+    radius[i] = size * Math.cos(t*PI/2.1);
   }
   //geometry
   let ep = new THREE.Vector2( thick,0 );
@@ -432,10 +458,11 @@ function makeGlass(){
   geo = mergeGeometry(geo);
   let glassL = new THREE.Mesh( geo, material );
   glassL.rotation.y = -PI/2;
+  glassL.rotation.z = PI/18;
   let glassR = glassL.clone();
   //position
   let pos = headPtCal(0.48,-0.15);
-  let z = pos[2]*1.18;
+  let z = pos[2]*1.13;
   glassL.position.set(pos[0], pos[1], z);
   glassR.position.set(-pos[0], pos[1], z);
 
@@ -449,36 +476,32 @@ function makeGlass(){
   bridge.position.set(0,pos[1],z);
 
   //temple
-  let len2 = size * 2.8;
+  let len2 = size * 2.3;
   let thick3 = thick / 3;
   let geo3 = new THREE.CylinderGeometry( thick3, thick3, len2, edge );
   let templeL = new THREE.Mesh( geo3, material2 );
 
-  scene.add(templeL);
-
-  let pos2 = headPtCal(0.48,0.35);
+  let pos2 = headPtCal(0.46,0.4);
   templeL.position.x = pos2[0];
   templeL.position.y = pos2[1];
-  templeL.position.z = z/1.8;
+  templeL.position.z = 15;
   templeL.rotation.x = PI/2;
   templeL.rotation.y = PI/6;
-  templeL.rotation.z = PI/9;
+  templeL.rotation.z = PI/11;
   let templeR = templeL.clone();
-  scene.add(templeR);
   templeR.position.x = -pos2[0];
   templeR.rotation.x = -PI/2;
   //templeR.rotation.y = -PI/6;
   //templeR.rotation.z = -PI/9;
 
-
   //side
   let side_pt = [];
-  let z_w = 12; //奥行き
-  let x_w = 15; //幅
+  let z_w = 10; //奥行き
+  let x_w = 9; //幅
   for(let i=0; i<node; i++){
     side_pt[i] = [];
     let t = i / (node-1);
-    let phase = Math.pow(t, 1.8) * PI/2.2;
+    let phase = Math.pow(t, 1.5) * PI/2.3;
     let f = 1 - ( phase/(PI/2) );
     let z = t * z_w;
     let div = t * x_w;
@@ -493,21 +516,31 @@ function makeGlass(){
   let side_geo = makeGeometry(node, edge, side_pt);
   side_geo = mergeGeometry(side_geo);
   let side_obj = new THREE.Mesh( side_geo, material2 );
-  scene.add(side_obj);
-  //let side_pos = headPtCal(0.3,0.35);
-  //side_obj.position.y = size/8;
-  side_obj.position.x = size*1.2;
-  side_obj.position.z = 50;
-  side_obj.position.y = 2.5;
-  side_obj.rotation.y = PI/8;
-  camera.position.set(0, 0,250);
-    camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+  side_obj.position.x = size;
+  side_obj.rotation.x = -PI/18;
+  side_obj.position.z = 45;
+  side_obj.position.y = 10;
+let side_objR = new THREE.Mesh( side_geo, material2 );
+
+side_objR.rotation.z = PI;
+side_objR.position.z = 45;
+  side_objR.position.y = 10;
+side_objR.position.x = -size;
+  side_objR.rotation.x = -PI/18;
+
+
+
   //console.log(size);
   //side_obj.rotation.y = PI/2;
 
 
   //grouping
   let glassG = new THREE.Group();
+  glassG.add(templeL);
+  glassG.add(templeR);
+  glassG.add(side_obj);
+  glassG.add(side_objR);
   glassG.add(glassL);
   glassG.add(glassR);
   glassG.add(bridge);
@@ -933,7 +966,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
       cw: 0.7, //curve intense w
       ct: 1.3, //curve intense t
       x: -0.48, //posx -1 - 1
-      y: 0.065, //posy -1 - 1
+      y: 0.06, //posy -1 - 1
       rotx: PI/18, //rotatex
       roty: -PI/5, //rotatey
       ep: new THREE.Vector2( 1, 0.2 ),
@@ -952,25 +985,34 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
       cw: 0.7, //curve intense w
       ct: 1.3, //curve intense t
       x: -0.1, //posx -1 - 1
-      y: 0.038, //posy -1 - 1
+      y: 0.03, //posy -1 - 1
       rotx: 0, //rotatex
       roty: -PI/12, //rotatey -migi
-      ep: new THREE.Vector2( 1, 0.48 ),
+      ep: new THREE.Vector2( 1.1, 0.45 ),
       cp1: new THREE.Vector2( 0.3, 0 ),
-      cp2: new THREE.Vector2( 1.0, 0 ),
+      cp2: new THREE.Vector2( 1, 0 ),
     };
     makeHair(params2);
 
-    params2.w = 1.3;
+    params2.w = 0.8;
     params2.x = -0.4;
-    params2.y = 0.05;
-    params2.ep.x = 0.8;
-    params2.ep.y = 0.43;
-    params2.cp2.x = 0.9;
+    params2.y = 0.06;
+    params2.ep.x = 0.9;
+    params2.ep.y = 0.3;
+    params2.cp2.x = 0.8;
     //params2.cp2.y = 1.2;
-    params2.cp1.x = 0.5;
+    params2.cp1.x = 0.6;
     params2.roty = -PI/32;
+    params2.rotx = -PI/24;
     makeHair(params2);
+
+    params2.x = 0.1;
+    params2.y = 0.04;
+    makeHair(params2);
+
+
+
+    //headG.rotation.y = PI/4.5;
 
 
 
