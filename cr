@@ -99,10 +99,12 @@ function init() {
   const uv_vert = document.getElementById('vs_uv').textContent;
   const uv_frag = document.getElementById('fs_uv').textContent;
   const bi_frag = document.getElementById('fs_bi').textContent;
+  const tri_frag = document.getElementById('fs_tri').textContent;
 
   let uniform = THREE.UniformsUtils.merge([
     THREE.UniformsLib['lights'],{
     'uTexture': { value: null },
+    'uTone': { value: null },
     'uColor1': { value: null },
     'uColor2': { value: null },
     'uAmbient': { vale: ambLight}}
@@ -472,11 +474,11 @@ function makeGlass(){
   //side
   let side_pt = [];
   let z_w = 12; //奥行き
-  let x_w = 10; //幅
+  let x_w = 15; //幅
   for(let i=0; i<node; i++){
     side_pt[i] = [];
     let t = i / (node-1);
-    let phase = Math.pow(t, 1.8) * PI/2;
+    let phase = Math.pow(t, 1.8) * PI/2.2;
     let f = 1 - ( phase/(PI/2) );
     let z = t * z_w;
     let div = t * x_w;
@@ -492,12 +494,14 @@ function makeGlass(){
   side_geo = mergeGeometry(side_geo);
   let side_obj = new THREE.Mesh( side_geo, material2 );
   scene.add(side_obj);
-  let side_pos = headPtCal(0.3,0.35);
+  //let side_pos = headPtCal(0.3,0.35);
   //side_obj.position.y = size/8;
-  //side_obj.position.x = size*1.2;
-  //side_obj.position.z = 49;
-  //side_obj.rotation.x = PI/30;
-  //headG.rotation.y = -PI/2;
+  side_obj.position.x = size*1.2;
+  side_obj.position.z = 50;
+  side_obj.position.y = 2.5;
+  side_obj.rotation.y = PI/8;
+  camera.position.set(0, 0,250);
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
   //console.log(size);
   //side_obj.rotation.y = PI/2;
 
@@ -710,13 +714,15 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     const edge = headEdge;
 
     //material
-    const texture = loader.load('img/hair.png');
+    const texture = loader.load('img/head.png');
+    const tone = loader.load('img/skin_tone.png');
     let mat = material.clone();
     mat.vertexShader = uv_vert;
-    mat.fragmentShader = bi_frag;
+    mat.fragmentShader = tri_frag;
     mat.uniforms.uColor1.value = skinCol;
     mat.uniforms.uColor2.value = hairCol;
     mat.uniforms.uTexture.value = texture;
+    mat.uniforms.uTone.value = tone;
 
     //uvmap
     let uvmap = [];
