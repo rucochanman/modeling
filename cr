@@ -28,7 +28,7 @@ function init() {
 
   //ライト
   const light = new THREE.DirectionalLight( 0xffffff );
-  light.position.set( 0, 10, 280 );
+  light.position.set( 20, 0, 280 );
   scene.add( light );
 
 
@@ -67,19 +67,19 @@ function init() {
   const armLength = wScale/10;
   const armLength2 = armLength * 1.2;
   const armThick = wScale/17;
-  const footLength = wScale/8;
-  const footLength2 = footLength * 1.5;
-  const footThick = wScale/17;
+  const footLength = wScale/11;
+  const footLength2 = footLength * 0.8;
+  const footThick = wScale/10.5;
   const headSize = wScale/1.2;
-  const bodyLength = wScale/3.9;
-  const bodyWidth = wScale/4;
-  const ankleThick = footThick * Math.cos(PI/3.8);
+  const bodyLength = wScale/4.5;
+  const bodyWidth = wScale/4.2;
+  const kneeThick = footThick * Math.cos(PI/4);
+  const ankleThick = kneeThick * Math.cos(PI/3.8);
   let upperArmThick = new Array(pipeNode);
   let lowerArmThick = new Array(pipeNode);
   let lowerArmWidth = new Array(pipeNode);
   let upperFootThick = new Array(pipeNode);
   let lowerFootThick = new Array(pipeNode);
-  let lowerFootWidth = new Array(pipeNode);
   let bodyWidths = new Array(bodyNode);
   let bodyThicks = new Array(bodyNode);
 
@@ -91,7 +91,7 @@ function init() {
   const eyeCol = new THREE.Color(0xffd700);
   const highCol = new THREE.Color(0x38180f);
   //const bodyCol = new THREE.Color(0x8a4310);
-  const bodyCol = new THREE.Color(0x000000);
+  const bodyCol = new THREE.Color(0x111111);
   const stripeCol = new THREE.Color(0xcb9b8f);
 
   //materials
@@ -150,15 +150,16 @@ function init() {
   let bodyGeo;
   let upperFootGeoL;
   let upperFootGeoR;
-  let jointFootGeoL;
-  let jointFootGeoR;
+  let kneeGeoL;
+  let kneeGeoR;
   let ankleGeoL;
   let ankleGeoR;
   let lowerFootGeoL;
   let lowerFootGeoR;
 
-
   let eyelashObj;
+  let toeObjL;
+  let toeObjR;
 
   //groups
   //arms
@@ -191,24 +192,28 @@ function init() {
   ///////////////////////////////////////inits
 
 
-  //headInit();
+  headInit();
   //scene.add(headG);
-  //makeGlass();
+  makeGlass();
   //headG.rotation.y = PI/8;
 
-  //armInit();
-  //armUpdate(LEFT, 0.0,0.0,0,0); //-1-2, 0-1.5
-  //armUpdate(RIGHT, 0.0,0,0,0);
+  armInit();
+  armUpdate(LEFT, 1.0,0.0,0,0); //-1-2, 0-1.5
+  armUpdate(RIGHT, -0.4,0,0,0);
 
-  //bodyInit();
-  //bodyUpdate(0,0,0); //-1-1, -1-1.5, -1,1
+  bodyInit();
+  bodyUpdate(0,0,0); //-1-1, -1-1.5, -1,1
   //
-  //bodyG.position.y = -50;
+  bodyG.position.y = -50;
   //bodyG.rotation.y = PI/4;
   footInit();
-  //footUpdate(LEFT, 1,1,0,0);
+  footUpdate(LEFT, 0,0.0,0, 0,0,0);
+  footUpdate(RIGHT, 0,0,0, 0,0,0);
   //footUpdate(RIGHT, 1,1,0,0);
 
+  //const bend1 = mapping(v1, -1.0, 2.0, PI/4, -PI/2);
+  //const bend2 = mapping(v2, 0.001, 1.5, 0.0, -3*PI/4);
+  //const bend3 = mapping(v3, 0.01, 1.0, 0.0, -PI/4);
 
 
   let n = 0;
@@ -274,94 +279,108 @@ function footInit(){
   //defs
   const node = pipeNode;
   const edge = pipeEdge;
-  let toeThick = new Array(node);
+  let toeFront = new Array(node);
+  let toeBack = new Array(node);
   let toeWidth = new Array(node);
-  let toe_ampt = footThick * 3;
-  let toe_ampw = footThick * 1;
-  let toeLength = footLength;
-
+  let toe_ampt = footThick/5;
+  let toe_ampw = footThick/15;
+  let toeLength = footLength/2.2;
 
   //thick
   for(let i=0; i<node; i++){
       let t = i/(node-1);
-      upperFootThick[i] = footThick;
-      lowerFootThick[i] = footThick * Math.cos(Math.pow(t,2.5)*PI/3.8);
-      lowerFootWidth[i] = lowerFootThick[i];
+      upperFootThick[i] = footThick * Math.cos(Math.pow(t,1.)*PI/3.8);;
+      lowerFootThick[i] = kneeThick * Math.cos(Math.pow(t,1.)*PI/3.8);
       //toe
-      let theta1 = 1.6 * Math.pow(t,0.8) * PI/2;
-      let theta2 = 1.4 * Math.pow(t,2) * PI/2;
-      toeThick[i] = toe_ampt * Math.sin(theta1) + ankleThick;
+      let theta1 = 1.5 * Math.pow(t,0.8) * PI/2;
+      let theta2 = 1.3 * Math.pow(t,1) * PI/2;
+      toeFront[i] = 4 * toe_ampt * Math.sin(theta1) + ankleThick;
+      toeBack[i] = toe_ampt * Math.sin(theta2) + ankleThick;
       toeWidth[i] = toe_ampw * Math.sin(theta2) + ankleThick;
-
   }
 
   //meke upper foot
   let ep = new THREE.Vector2( footLength,0 );
-  let ufoot_pt = makePipe(OPEN, node, edge, ep, ep, upperFootThick, upperFootThick);
-  let ufoot_geo = makeGeometry(node, edge, ufoot_pt);
-  ufoot_geo = mergeGeometry(ufoot_geo);
-  upperFootGeoL = ufoot_geo.clone();
-  upperFootGeoR = ufoot_geo.clone();
-  lowerFootGeoL = ufoot_geo.clone();
-  lowerFootGeoR = ufoot_geo.clone();
+  let foot_pt = makePipe(OPEN, node, edge, ep, ep, upperFootThick, upperFootThick);
+  let foot_geo = makeGeometry(node, edge, foot_pt);
+  foot_geo = mergeGeometry(foot_geo);
+  upperFootGeoL = foot_geo.clone();
+  upperFootGeoR = foot_geo.clone();
+  lowerFootGeoL = foot_geo.clone();
+  lowerFootGeoR = foot_geo.clone();
   let ufoot_objL = new THREE.Mesh(upperFootGeoL, bodyMat);
   let ufoot_objR = new THREE.Mesh(upperFootGeoR, bodyMat);
-  let lfoot_objL = new THREE.Mesh(lowerFootGeoL, skinMat);
-  let lfoot_objR = new THREE.Mesh(lowerFootGeoR, skinMat);
+  let lfoot_objL = new THREE.Mesh(lowerFootGeoL, bodyMat);
+  let lfoot_objR = new THREE.Mesh(lowerFootGeoR, bodyMat);
 
   //joint
-  let jfoot_pt = makeJoint(node, edge, footThick, -PI/100);
-  jointFootGeoL = makeGeometry(node, edge, jfoot_pt);
-  jointFootGeoL = mergeGeometry(jointFootGeoL);
-  jointFootGeoR = jointFootGeoL.clone();
-  ankleGeoL = jointFootGeoL.clone();
-  ankleGeoR = jointFootGeoL.clone();
-  let jfoot_objL = new THREE.Mesh(jointFootGeoL, bodyMat);
-  let jfoot_objR = new THREE.Mesh(jointFootGeoR, bodyMat);
-  let ankle_objL = new THREE.Mesh(ankleGeoL, bodyMat);  
+  let joint_pt = makeJoint(node, edge, kneeThick, -PI/100);
+  let joint_geo = makeGeometry(node, edge, joint_pt);
+  joint_geo = mergeGeometry(joint_geo);
+  kneeGeoL = joint_geo.clone();
+  kneeGeoR = joint_geo.clone();
+  ankleGeoL = joint_geo.clone();
+  ankleGeoR = joint_geo.clone();
+  let knee_objL = new THREE.Mesh(kneeGeoL, bodyMat);
+  let knee_objR = new THREE.Mesh(kneeGeoR, bodyMat);
+  let ankle_objL = new THREE.Mesh(ankleGeoL, bodyMat);
   let ankle_objR = new THREE.Mesh(ankleGeoR, bodyMat);
 
   //toe
-  let toe_ep = new THREE.Vector2( toeLength,0 );
-  let toe_pt = makePipe(CLOSE, node, edge, toe_ep, toe_ep, toeThick, toeThick);
-  let toe_geo = makeGeometry(node+1, edge, toe_pt);
+  let toe_pt = [];
+  for(let i=0; i<node; i++){
+    toe_pt[i] = [];
+    let x = i / (node-1) * toeLength;
+    for(let j=0; j<edge; j++){
+      if(i==node-1){
+        toe_pt[i][j] = [x, 0, 0];
+      }else{
+        let theta = j * 2 * PI / edge;
+        let r = theta<PI ? toeFront[i] : toeBack[i];
+        let y = r * Math.sin(theta);
+        let z = toeWidth[i] * Math.cos(theta);
+        toe_pt[i][j] = [x, y, z];
+      }
+    }
+  }
+  let toe_geo = makeGeometry(node, edge, toe_pt);
   toe_geo = mergeGeometry(toe_geo);
-  let toe_objL = new THREE.Mesh(toe_geo, skinMat);
-
-  scene.add(toe_objL);
-  toe_objL.position.x = 100;
-
+  toeObjL = new THREE.Mesh(toe_geo, bodyMat);
+  toeObjR = toeObjL.clone();
 
   //Grouping-L
+  toeGL.add(toeObjL);
+  toeGL.add(ankle_objL);
   lowerFootGL.add(lfoot_objL);
-  //lowerFootGL.add(toe_objL);
-  kneeGL.add(jfoot_objL);
+  lowerFootGL.add(toeGL);
+  kneeGL.add(knee_objL);
   kneeGL.add(lowerFootGL);
   footGL.add(ufoot_objL);
   footGL.add(kneeGL);
 
   //Grouping-R
+  toeGR.add(toeObjR);
+  toeGR.add(ankle_objR);
   lowerFootGR.add(lfoot_objR);
-  //lowerFootGL.add(toe_objR);
-  kneeGR.add(jfoot_objR);
+  lowerFootGR.add(toeGR);
+  kneeGR.add(knee_objR);
   kneeGR.add(lowerFootGR);
   footGR.add(ufoot_objR);
   footGR.add(kneeGR);
 
-  footGR.position.x = -100;
+  //footGR.position.x = -100;
   footG.add(footGL);
   footG.add(footGR);
 
-  //bodyG.add(armG);
+  bodyG.add(footG);
+  footG.position.y = -bodyLength / 20;
 
-  scene.add(footG);
-  //footGR.position.y = -60;
 }
 
 
 
 
-function footUpdate( side, v1, v2, rot1, rot2 ){
+function footUpdate( side, v1, v2, v3, rot1, rot2, rot3){
   //clear
   lowerPipePos.set(0,0);
   pipeRad = 0;
@@ -373,49 +392,59 @@ function footUpdate( side, v1, v2, rot1, rot2 ){
   //value mapping
   const bend1 = mapping(v1, -1.0, 2.0, PI/4, -PI/2);
   const bend2 = mapping(v2, 0.001, 1.5, 0.0, -3*PI/4);
+  const bend3 = mapping(v3, 0.01, 1.0, 0.0, -PI/4);
   let {ep1, cp1, ep2, cp2} = getBezierPt(footLength, footLength2, bend1, bend2);
 
   let upper_geo = side ? upperFootGeoR : upperFootGeoL;
-  let joint_geo = side ? jointFootGeoR : jointFootGeoL;
+  let knee_geo = side ? kneeGeoR : kneeGeoL;
   let lower_geo = side ? lowerFootGeoR : lowerFootGeoL;
-  //let hand = side ? handGR : handGL;
-  let joint = side ? kneeGR : kneeGL;
-  let lower_foot = side ? lowerFootGR : lowerFootGL;
+  let ankle_geo = side ? ankleGeoR : ankleGeoL;
   let foot = side ? footGR : footGL;
-  let pos = side ? -100 : 100;
+  let knee = side ? kneeGR : kneeGL;
+  let ankle = side ? toeGR : toeGL;
+  let lower_foot = side ? lowerFootGR : lowerFootGL;
+  let toe = side ? toeObjR : toeObjL;
+  let pos = side ? -bodyWidth/1.8 : bodyWidth/1.8;
 
   //geoUpdate
   let upper_pt = makePipe(OPEN, node, edge, ep1, cp1, upperFootThick, upperFootThick);
   updateGeometry(node, edge, upper_pt, upper_geo);
 
-  let joint_pt = makeJoint(node, edge, footThick, bend2);
-  updateGeometry(node, edge, joint_pt, joint_geo);
-  joint.position.set(ep1.x, ep1.y, 0);
+  let knee_pt = makeJoint(node, edge, kneeThick, bend2);
+  updateGeometry(node, edge, knee_pt, knee_geo);
+  knee.position.set(ep1.x, ep1.y, 0);
 
-  let lower_pt = makePipe(OPEN, node, edge, ep2, cp2, lowerFootThick, lowerFootWidth);
+  let lower_pt = makePipe(OPEN, node, edge, ep2, cp2, lowerFootThick, lowerFootThick);
   updateGeometry(node, edge, lower_pt, lower_geo);
   lower_foot.position.set(lowerPipePos.x,lowerPipePos.y,0);
 
+  let ankle_pt = makeJoint(node, edge, ankleThick, bend3);
+  updateGeometry(node, edge, ankle_pt, ankle_geo);
+  ankle.position.set(ep2.x, ep2.y, 0);
 
-
-  //hand
-  //hand.position.set(ep2.x, ep2.y, 0);
-  //hand.rotation.z = pipeRad;
+  toe.position.set(lowerPipePos.x,lowerPipePos.y,0);
+  toe.rotation.z = pipeRad;
 
   //rotation
   let axis1 = new THREE.Vector3(1,0,0);
-  let diff = Math.abs(bend1) * -Math.PI/8;
-  let bend = bend1 + diff;
-  let axis2 = new THREE.Vector3(Math.cos(bend),Math.sin(bend),0);
+  let rad = v1 > 0 ? -Math.PI/11 : -Math.PI/8;
+  let diff = Math.abs(bend1) * rad;
+  let a1 = bend1 + diff;
+  let axis2 = new THREE.Vector3(Math.cos(a1),Math.sin(a1),0);
   axis2.normalize();
+  let a2 = a1 + bend2;
+  let axis3 = new THREE.Vector3(Math.cos(a2),Math.sin(a2),0);
+  axis3.normalize();
   let q1 = new THREE.Quaternion();
   let q2 = new THREE.Quaternion();
+  let q3 = new THREE.Quaternion();
   q1.setFromAxisAngle(axis1,rot1-PI/2);
   q2.setFromAxisAngle(axis2,rot2+PI);
-  joint.applyQuaternion(q2);
+  q3.setFromAxisAngle(axis3,rot3);
+  knee.applyQuaternion(q2);
   foot.applyQuaternion(q1);
+  ankle.applyQuaternion(q3);
 
-  foot.position.y = -50;
   foot.position.x = pos;
   foot.rotation.y = PI/2;
 }
@@ -611,7 +640,7 @@ function makeHip(){
 
   const node = Math.floor(bodyNode/2);
   const edge = bodyEdge;
-  const h = bodyLength/3.2;
+  const h = bodyLength/2.8;
   const center = new THREE.Vector2();
 
   let pt = [];
@@ -637,7 +666,7 @@ function makeHip(){
     color: 0xff0000,
     //wireframe: true
   });
-  let obj = new THREE.Mesh( geo, mat );
+  let obj = new THREE.Mesh( geo, bodyMat );
   bodyG.add(obj);
   obj.rotation.x = PI/2;
 
@@ -1120,7 +1149,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     let p = p_temp>0.45 ? Math.pow(1.0-p_temp, 3) + p_temp : p_temp;
     let scale = p_temp>0.45
       ? 0.15 * Math.sin(1.8*(pidiv-0.5)*PI+PI/8)+1.12
-      : 0.14 * Math.sin(1.8*pidiv*PI)+1.245;
+      : 0.1 * Math.sin(1.8*pidiv*PI)+1.245;
     const synth = (1-p)*front + p*back;
     //set points
     const thita = step * PI;
@@ -1311,7 +1340,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     const ep1 = new THREE.Vector2( x1,y1 );
     let cp1 = new THREE.Vector2( 0,0 );
     ep1.y>0 ? cp1.y = y1/2 : cp1.x = -y1/2;
-    //ep1.y>0 ? cp1.y = y1/2 : cp1.x = y1/2;
+    //ep1.y>0 ? cp1.y = y1/2 : cp1.x = -y1/2;
     //arm2
     const joint_len = armThick * Math.abs(bend2);
     len2 -= joint_len;
@@ -1417,7 +1446,7 @@ function blink(open){
     }
     //update values
     pipeRad += rad;
-    lowerPipePos.add(center);
+    lowerPipePos = center;
     return pt;
 }
 
