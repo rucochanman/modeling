@@ -196,7 +196,7 @@ function init() {
 
 
   armInit();
-  armUpdate(LEFT, 0.0, 0.0, 0, 0); //-1-2, 0-1.5
+  armUpdate(LEFT, 2.0, 0.0, -PI/6, 0); //-1-2, 0-1.5
   armUpdate(RIGHT, 0.0, 0, 0, 0);
 
   bodyInit();
@@ -205,7 +205,7 @@ function init() {
   bodyG.position.y = -50;
   //bodyG.rotation.y = -PI/2;
   footInit();
-  footUpdate2(LEFT, 1,0,0, 0,0,0 );
+  footUpdate2(LEFT, 1.8,1,0, -PI/6,0,0 );
   //footUpdate(RIGHT, 0,0,0, 0,0,0);
   //footUpdate(RIGHT, 1,1,0,0);
 
@@ -277,14 +277,14 @@ function footInit(){
   //defs
   const node = pipeNode;
   const edge = pipeEdge;
-  let toeFront = new Array(node);
-  let toeBack = new Array(node);
-  let toeWidth = new Array(node);
   let toe_ampt = footThick/5;
   let toe_ampw = footThick/15;
   let toeLength = footLength/2.2;
 
   //thick
+  let toeFront = new Array(node);
+  let toeBack = new Array(node);
+  let toeWidth = new Array(node);
   for(let i=0; i<node; i++){
       let t = i/(node-1);
       upperFootThick[i] = footThick;
@@ -1355,7 +1355,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
   }
 
 
-  function footUpdate2( side, v1, v2, v3, rot1, rot2, rot3){
+  function footUpdate2( side, v1, v2, v3, rot1, rot2, rot3 ){
     //clear
     lowerPipePos.set(0,0);
     pipeRad = 0;
@@ -1366,7 +1366,7 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
 
     //value mapping
     const bend1 = mapping(v1, -1.0, 2.0, PI/4, -PI/2);
-    const bend2 = mapping(v2, 0.001, 1.5, -0.0, -3*PI/4);
+    const bend2 = mapping(v2, 0.001, 1.5, 0.0, -3*PI/4);
     //const bend3 = mapping(v3, 0.0, 1.0, -0.01, -PI/4);
     let {ep1, cp1, ep2, cp2} = getBezierPt(armLength, armLength2, bend1, bend2);
 
@@ -1389,22 +1389,24 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     updateGeometry(node, edge, joint_pt, joint_geo);
     joint.position.set(ep1.x, ep1.y, 0);
 
-    let lower_pt = makePipe(OPEN, node, edge, ep2, cp2, lowerArmThick, lowerArmWidth);
+    let lower_pt = makePipe(OPEN, node, edge, ep2, cp2, upperArmThick, upperArmThick);
     updateGeometry(node, edge, lower_pt, lower_geo);
     lower_foot.position.set(lowerPipePos.x,lowerPipePos.y,0);
 
-    //let ankle_pt = makeJoint(node, edge, ankleThick, bend3);
-    //updateGeometry(node, edge, ankle_pt, ankle_geo);
-    //ankle.position.set(ep2.x, ep2.y, 0);
+    let ankle_pt = makeJoint(node, edge, armThick, -PI/4);
+    updateGeometry(node, edge, ankle_pt, ankle_geo);
+    ankle.position.set(ep2.x, ep2.y, 0);
 
     //hand
   //  toe.position.set(lowerPipePos.x,lowerPipePos.y,0);
   //  toe.rotation.z = pipeRad;
+  //ankle.position.y = 100;
+  toe.position.x = -80;
 
     //rotation
     let axis1 = new THREE.Vector3(1,0,0);
     let diff = Math.abs(bend1) * -Math.PI/8;
-    let a1 = bend1 + diff;
+    let a1 = bend1 + bend2 + diff;
     let axis2 = new THREE.Vector3(Math.cos(a1),Math.sin(a1),0);
     axis2.normalize();
 //    let a2 = a1 + bend2 + bend3;/
@@ -1414,9 +1416,9 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     let q2 = new THREE.Quaternion();
 //    let q3 = new THREE.Quaternion();
     q1.setFromAxisAngle(axis1,rot1);
-    q2.setFromAxisAngle(axis2,rot2-PI);
+    q2.setFromAxisAngle(axis2,rot2);
 //    q3.setFromAxisAngle(axis3,rot3);
-    joint.applyQuaternion(q2);
+    lower_foot.applyQuaternion(q2);
     foot.applyQuaternion(q1);
 //    toe.applyQuaternion(q3);
     foot.position.x = 70;
@@ -1497,7 +1499,6 @@ function bodyUpdate( lr_value, fb_value, tw_value ){
     const ep1 = new THREE.Vector2( x1,y1 );
     let cp1 = new THREE.Vector2( 0,0 );
     ep1.y>0 ? cp1.y = y1/2 : cp1.x = -y1/2;
-    //ep1.y>0 ? cp1.y = y1/2 : cp1.x = -y1/2;
     //arm2
     const joint_len = armThick * Math.abs(bend2);
     len2 -= joint_len;
@@ -1578,11 +1579,10 @@ function blink(open){
 
   function makeJoint(node, edge, thick, rad){
     //defs
-
     let origin = new THREE.Vector2( 0,-thick );
     let init = new THREE.Vector2();
     origin.rotateAround(init, pipeRad);
-    let center = new THREE.Vector2( 0,thick);
+    let center = new THREE.Vector2( 0,thick );
     center.add(origin);
     center.rotateAround(origin, pipeRad);
 
@@ -1593,7 +1593,7 @@ function blink(open){
       let r = i==0 ? 0 : rad/(node-1);
       center.rotateAround(origin, r);
       for(let j=0; j<edge; j++){
-        let theta = j*2*PI/edge;
+        let theta = j * 2 * PI / edge;
         let w = thick * Math.cos(theta);
         let h = thick * Math.sin(theta);
         let v = new THREE.Vector2(0, h);
@@ -1604,6 +1604,7 @@ function blink(open){
     }
     //update values
     pipeRad += rad;
+    //center.rotateAround(origin, PI/16);
     lowerPipePos = center;
     return pt;
 }
